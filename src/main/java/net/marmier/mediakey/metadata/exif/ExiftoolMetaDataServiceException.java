@@ -1,7 +1,7 @@
-package metadata.exif;
+package net.marmier.mediakey.metadata.exif;
 
 /**
- * Created by raphael on 11.12.15.
+ * Added by raphael on 11.12.15.
  */
 public class ExiftoolMetaDataServiceException extends RuntimeException {
 

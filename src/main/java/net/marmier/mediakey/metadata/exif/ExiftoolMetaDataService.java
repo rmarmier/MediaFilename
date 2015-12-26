@@ -1,14 +1,14 @@
-package metadata.exif;
+package net.marmier.mediakey.metadata.exif;
 
 import com.thebuzzmedia.exiftool.ExifTool;
-import metadata.MetaData;
-import metadata.MetaDataService;
+import net.marmier.mediakey.metadata.MetaData;
+import net.marmier.mediakey.metadata.MetaDataService;
 
 import java.io.File;
 import java.io.IOException;
 
 /**
- * Created by raphael on 30.11.15.
+ * Added by raphael on 30.11.15.
  */
 public class ExiftoolMetaDataService implements MetaDataService {
 
@@ -20,7 +20,7 @@ public class ExiftoolMetaDataService implements MetaDataService {
 
     public MetaData metadataFromFile(File file, ExifProfile profile) {
         try {
-            return profile.convert(getTool().getImageMeta(file, ExifTool.Tag.DATE_TIME_ORIGINAL));
+            return profile.convert(file, getTool());
         } catch (IOException e) {
             throw new ExiftoolMetaDataServiceException(String.format("File %s is unreadable.", file.getAbsoluteFile()), e);
         }

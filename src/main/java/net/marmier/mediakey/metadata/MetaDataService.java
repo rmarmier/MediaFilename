@@ -1,11 +1,11 @@
-package metadata;
+package net.marmier.mediakey.metadata;
 
-import metadata.exif.ExifProfile;
+import net.marmier.mediakey.metadata.exif.ExifProfile;
 
 import java.io.File;
 
 /**
- * Created by raphael on 30.11.15.
+ * Added by raphael on 30.11.15.
  */
 public interface MetaDataService {
 
