@@ -18,6 +18,6 @@ public class NikonNefProfile implements ExifProfile {
     public MetaData convert(File file, ExifTool tool) throws IOException {
         Map<ExifTool.Tag, String> valueMap = tool.getImageMeta(file, ExifTool.Tag.DATE_TIME_ORIGINAL);
         String val = valueMap.get(ExifTool.Tag.DATE_TIME_ORIGINAL);
-        return val == null ? null : new PhotoMetaData(LocalDateTime.parse(val, DateTimeFormatter.ofPattern("y:M:d H:m:s")));
+        return val == null ? null : new PhotoMetaData(LocalDateTime.parse(val, DateTimeFormatter.ofPattern("y:M:d H:m:s")), file.getName());
     }
 }

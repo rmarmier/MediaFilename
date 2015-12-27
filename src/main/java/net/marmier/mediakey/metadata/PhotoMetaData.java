@@ -1,25 +1,23 @@
 package net.marmier.mediakey.metadata;
 
-import com.thebuzzmedia.exiftool.ExifTool;
-
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 /**
  * Added by raphael on 13.12.15.
  */
 public class PhotoMetaData implements MetaData {
 
-    LocalDateTime captureDateTime;
-    Map<ExifTool.Tag, String> valueMap;
+    String filename;
 
-    public PhotoMetaData(LocalDateTime captureDateTime) {
+    LocalDateTime captureDateTime;
+
+    public PhotoMetaData(LocalDateTime captureDateTime, String filename) {
+        this.filename = filename;
         this.captureDateTime = captureDateTime;
     }
 
     public String getFileName() {
-        throw new UnsupportedOperationException();
+        return filename;
     }
 
     public LocalDateTime getCaptureDateTime() {
