@@ -1,7 +1,5 @@
 package net.marmier.mediakey.metadata;
 
-import net.marmier.mediakey.metadata.exif.ExifProfile;
-
 import java.io.File;
 
 /**
@@ -9,5 +7,5 @@ import java.io.File;
  */
 public interface MetaDataService {
 
-    MetaData metadataFromFile(File file, ExifProfile profile);
+    MetaData metadataFromFile(File file);
 }
