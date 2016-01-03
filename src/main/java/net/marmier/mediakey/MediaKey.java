@@ -2,9 +2,7 @@ package net.marmier.mediakey;
 
 import net.marmier.mediakey.metadata.MetaData;
 import net.marmier.mediakey.metadata.MetaDataService;
-import net.marmier.mediakey.metadata.exif.ExifProfile;
 import net.marmier.mediakey.metadata.exif.ExiftoolMetaDataService;
-import net.marmier.mediakey.metadata.exif.NikonNefProfile;
 import net.marmier.mediakey.sig.SigGen;
 import net.marmier.mediakey.sig.UtcTimeZoneFilenameSig;
 import net.marmier.mediakey.tz.Offset;
@@ -26,9 +24,7 @@ public class MediaKey {
 
     private SigGen sigGen;
 
-    public String keyedNameForMedia(String filename) {
-        LOG.info("Processing {}", filename);
-        File file = new File(filename);
+    public String keyedNameForMedia(File file) {
 
         MetaData meta = metaDataService.metadataFromFile(file);
         LOG.info(" --> Media creation datetime: {}", meta.getCaptureDateTime());
@@ -37,21 +33,42 @@ public class MediaKey {
         return sig;
     }
 
-    public MediaKey(String code) {
-        sigGen = new UtcTimeZoneFilenameSig(Offset.forCode(code));
+    public MediaKey(Offset code) {
+        sigGen = new UtcTimeZoneFilenameSig(code);
     }
 
     public static void main(String args[]) {
         if (args.length < 2) {
-            System.out.println("Please provide path to a file.");
+            showUsage(null);
         } else {
             // Initialize the service
             String code = args[0];
-            mediaKey = new MediaKey(code);
+            Offset decoded = null;
+            try {
+                decoded = Offset.forCode(code);
+            } catch (IllegalArgumentException e) {
+                showUsage("Invalid timezone code provided: " + code);
+                System.exit(1);
+            }
+            mediaKey = new MediaKey(decoded);
 
             final String filename = args[1];
+            File file = checkAndGetFile(filename);
 
-            System.out.println(mediaKey.keyedNameForMedia(filename));
+            LOG.info("Processing {}", filename);
+            System.out.println(mediaKey.keyedNameForMedia(file));
+        }
+    }
+
+    private static File checkAndGetFile(String filename) {
+        return new File(filename);
+    }
+
+    private static void showUsage(String additionalInfo) {
+        String usage = "Please provide a valid timezone (ex. +01:00) and the path to the directory containing the media to rename.";
+        System.out.println(usage);
+        if (additionalInfo != null) {
+            System.out.println(additionalInfo);
         }
     }
 }

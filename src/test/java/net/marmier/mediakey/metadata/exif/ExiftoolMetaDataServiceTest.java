@@ -3,6 +3,7 @@ package net.marmier.mediakey.metadata.exif;
 import net.marmier.mediakey.MediaKey;
 import net.marmier.mediakey.metadata.MetaData;
 import net.marmier.mediakey.metadata.MetaDataService;
+import net.marmier.mediakey.tz.Offset;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +43,8 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationNEF() {
         String expected = "2015-10-27_120816utc_tz+0100_DSC_5303.NEF";
 
-        MediaKey mediaKey = new MediaKey("UTC+1");
-        String key = mediaKey.keyedNameForMedia("src/test/resources/nikon/DSC_5303.NEF");
+        MediaKey mediaKey = new MediaKey(Offset.forCode("UTC+1"));
+        String key = mediaKey.keyedNameForMedia(new File("src/test/resources/nikon/DSC_5303.NEF"));
 
         Assert.assertEquals(expected, key);
     }
@@ -52,8 +53,8 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationJPG() {
         String expected = "2015-10-18_145029utc_tz+0200_DSC_4180.JPG";
 
-        MediaKey mediaKey = new MediaKey("UTC+2");
-        String key = mediaKey.keyedNameForMedia("src/test/resources/nikon/DSC_4180.JPG");
+        MediaKey mediaKey = new MediaKey(Offset.forCode("UTC+2"));
+        String key = mediaKey.keyedNameForMedia(new File("src/test/resources/nikon/DSC_4180.JPG"));
 
         Assert.assertEquals(expected, key);
     }
