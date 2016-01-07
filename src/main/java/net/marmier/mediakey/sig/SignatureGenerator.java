@@ -9,15 +9,15 @@ import java.time.format.DateTimeFormatter;
 /**
  * Added by raphael on 27.12.15.
  */
-public class UtcTimeZoneFilenameSig implements SigGen {
+public class SignatureGenerator {
 
     Offset tzOffset;
 
-    public UtcTimeZoneFilenameSig(Offset tzOffset) {
+    public SignatureGenerator(Offset tzOffset) {
         this.tzOffset = tzOffset;
     }
 
-    public String createSig(MetaData meta) {
+    public String createUtcTimeZoneFilenameSig(MetaData meta) {
         LocalDateTime utcDateTime = tzOffset.reverse(meta.getCaptureDateTime());
 
 

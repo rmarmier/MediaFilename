@@ -3,13 +3,15 @@ package net.marmier.mediakey;
 import net.marmier.mediakey.metadata.MetaData;
 import net.marmier.mediakey.metadata.MetaDataService;
 import net.marmier.mediakey.metadata.exif.ExiftoolMetaDataService;
-import net.marmier.mediakey.sig.SigGen;
-import net.marmier.mediakey.sig.UtcTimeZoneFilenameSig;
+import net.marmier.mediakey.sig.SignatureGenerator;
 import net.marmier.mediakey.tz.Offset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Added by raphael on 29.11.15.
@@ -22,22 +24,22 @@ public class MediaKey {
 
     private MetaDataService metaDataService = new ExiftoolMetaDataService();
 
-    private SigGen sigGen;
+    private SignatureGenerator sigGen;
 
     public String keyedNameForMedia(File file) {
 
         MetaData meta = metaDataService.metadataFromFile(file);
         LOG.info(" --> Media creation datetime: {}", meta.getCaptureDateTime());
-        String sig = sigGen.createSig(meta);
+        String sig = sigGen.createUtcTimeZoneFilenameSig(meta);
         LOG.info(" --> Resulting sig: {}", sig);
         return sig;
     }
 
     public MediaKey(Offset code) {
-        sigGen = new UtcTimeZoneFilenameSig(code);
+        sigGen = new SignatureGenerator(code);
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException {
         if (args.length < 2) {
             showUsage(null);
         } else {
@@ -55,8 +57,12 @@ public class MediaKey {
             final String filename = args[1];
             File file = checkAndGetFile(filename);
 
-            LOG.info("Processing {}", filename);
-            System.out.println(mediaKey.keyedNameForMedia(file));
+            if (file.isDirectory()) {
+                processDirectory(file.toPath());
+            } else {
+                LOG.info("Processing {}", filename);
+                System.out.println(mediaKey.keyedNameForMedia(file));
+            }
         }
     }
 
@@ -70,5 +76,28 @@ public class MediaKey {
         if (additionalInfo != null) {
             System.out.println(additionalInfo);
         }
+    }
+
+    private static void processDirectory(Path directory) throws IOException {
+        Files.walkFileTree(directory, new FileVisitor<Path>() {
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                LOG.info("Processing {}", file.getFileName());
+                System.out.println(mediaKey.keyedNameForMedia(file.toFile()));
+                return FileVisitResult.CONTINUE;
+            }
+
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                exc.printStackTrace();
+                return FileVisitResult.CONTINUE;
+            }
+
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }
