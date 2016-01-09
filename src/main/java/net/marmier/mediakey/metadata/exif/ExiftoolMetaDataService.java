@@ -29,6 +29,7 @@ public class ExiftoolMetaDataService implements MetaDataService {
         //tool = new ExifTool(ExifTool.Feature.STAY_OPEN);
     }
 
+    @Override
     public MetaData metadataFromFile(File file) {
 
         ExifProfile profileToUse = determineProfile(file);
@@ -39,16 +40,27 @@ public class ExiftoolMetaDataService implements MetaDataService {
         }
     }
 
+    @Override
+    public boolean isSupportedFile(File file) {
+        return getProfile(file) != null;
+    }
+
     public ExifProfile determineProfile(File file) {
+        ExifProfile profile = getProfile(file);
+        if (profile == null) {
+            throw new IllegalArgumentException("Unrecognized file format: " + file.toString());
+        }
+        return profile;
+    }
+
+    private ExifProfile getProfile(File file) {
         if (jpgPattern.matcher(file.toString()).matches()) {
             return jpgProfile;
         }
         else if (nikonNefPattern.matcher(file.toString()).matches()) {
             return nikonNefProfile;
         }
-        else {
-            throw new IllegalArgumentException("Unrecognized file format: " + file.toString());
-        }
+        return null;
     }
 
     public ExifTool getTool() {

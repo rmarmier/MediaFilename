@@ -8,4 +8,6 @@ import java.io.File;
 public interface MetaDataService {
 
     MetaData metadataFromFile(File file);
+
+    boolean isSupportedFile(File file);
 }
