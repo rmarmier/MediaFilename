@@ -1,4 +1,4 @@
-package net.marmier.mediakey.metadata;
+package net.marmier.mediafilename.metadata;
 
 import java.io.File;
 

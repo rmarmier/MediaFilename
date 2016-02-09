@@ -1,11 +1,11 @@
-package net.marmier.mediakey.tz;
+package net.marmier.mediafilename.timezone;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static net.marmier.mediakey.tz.Offset.OffsetSign.NEGATIVE;
-import static net.marmier.mediakey.tz.Offset.OffsetSign.POSITIVE;
+import static net.marmier.mediafilename.timezone.Offset.OffsetSign.NEGATIVE;
+import static net.marmier.mediafilename.timezone.Offset.OffsetSign.POSITIVE;
 
 /**
  * Added by raphael on 27.12.15.

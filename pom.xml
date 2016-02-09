@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.marmier</groupId>
-    <artifactId>mediakey</artifactId>
+    <artifactId>mediafilename</artifactId>
     <version>1.0</version>
 
     <repositories>
@@ -75,7 +75,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>net.marmier.mediakey.MediaKey</mainClass>
+                            <mainClass>net.marmier.mediafilename.MediaRename</mainClass>
                             <!--                                        <classpathPrefix>dependency-jars/</classpathPrefix> -->
                         </manifest>
                     </archive>

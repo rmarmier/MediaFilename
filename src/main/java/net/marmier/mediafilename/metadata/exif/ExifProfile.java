@@ -1,7 +1,7 @@
-package net.marmier.mediakey.metadata.exif;
+package net.marmier.mediafilename.metadata.exif;
 
 import com.thebuzzmedia.exiftool.ExifTool;
-import net.marmier.mediakey.metadata.MetaData;
+import net.marmier.mediafilename.metadata.MetaData;
 
 import java.io.File;
 import java.io.IOException;

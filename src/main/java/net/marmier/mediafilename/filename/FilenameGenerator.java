@@ -1,7 +1,7 @@
-package net.marmier.mediakey.sig;
+package net.marmier.mediafilename.filename;
 
-import net.marmier.mediakey.metadata.MetaData;
-import net.marmier.mediakey.tz.Offset;
+import net.marmier.mediafilename.metadata.MetaData;
+import net.marmier.mediafilename.timezone.Offset;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -9,15 +9,15 @@ import java.time.format.DateTimeFormatter;
 /**
  * Added by raphael on 27.12.15.
  */
-public class SignatureGenerator {
+public class FilenameGenerator {
 
     Offset tzOffset;
 
-    public SignatureGenerator(Offset tzOffset) {
+    public FilenameGenerator(Offset tzOffset) {
         this.tzOffset = tzOffset;
     }
 
-    public String createUtcTimeZoneFilenameSig(MetaData meta) {
+    public String createUtcTimeZoneFilename(MetaData meta) {
         LocalDateTime utcDateTime = tzOffset.reverse(meta.getCaptureDateTime());
 
 

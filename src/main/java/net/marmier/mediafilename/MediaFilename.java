@@ -1,10 +1,10 @@
-package net.marmier.mediakey;
+package net.marmier.mediafilename;
 
-import net.marmier.mediakey.metadata.MetaData;
-import net.marmier.mediakey.metadata.MetaDataService;
-import net.marmier.mediakey.metadata.exif.ExiftoolMetaDataService;
-import net.marmier.mediakey.sig.SignatureGenerator;
-import net.marmier.mediakey.tz.Offset;
+import net.marmier.mediafilename.metadata.MetaData;
+import net.marmier.mediafilename.metadata.MetaDataService;
+import net.marmier.mediafilename.metadata.exif.ExiftoolMetaDataService;
+import net.marmier.mediafilename.filename.FilenameGenerator;
+import net.marmier.mediafilename.timezone.Offset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,27 +88,28 @@ import java.util.List;
  * <h4>System requirements</h4>
  * <ul>
  *     <li>Java 8</li>
+ *     <li>ExifTool by Phil Harvey</li>
  * </ul>
  *
  * <h4>Version history</h4>
- * v 1.0 - 2016-02-09 - Initial usable version.
+ * v 1.0 - 2016-02-10 - Initial usable version.
  *
  * Added by raphael on 29.11.15.
  */
-public class MediaKey {
+public class MediaFilename {
 
-    private static MediaKey mediaKey;
+    private static MediaFilename mediaFilename;
 
-    private Logger log = LoggerFactory.getLogger(MediaKey.class);
+    private Logger log = LoggerFactory.getLogger(MediaFilename.class);
 
     private MetaDataService metaDataService = new ExiftoolMetaDataService();
 
-    private SignatureGenerator sigGen;
+    private FilenameGenerator sigGen;
 
     private final Path workingDirectory;
 
-    public MediaKey(Offset code, String workingDirectory) {
-        sigGen = new SignatureGenerator(code);
+    public MediaFilename(Offset code, String workingDirectory) {
+        sigGen = new FilenameGenerator(code);
         this.workingDirectory = new File(workingDirectory).toPath();
     }
 
@@ -151,10 +152,10 @@ public class MediaKey {
             System.setProperty("errorsfilename", workingDirectory + "/" + filenameBase + "_errors");
 
             // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
-            mediaKey = new MediaKey(offset, workingDirectory);
+            mediaFilename = new MediaFilename(offset, workingDirectory);
 
             // Process the media files and get the results
-            final List<Result> results = mediaKey.process(targetFile);
+            final List<Result> results = mediaFilename.process(targetFile);
 
             // Generate the command targetFile
             writeResult(commandFile, results);
@@ -267,7 +268,7 @@ public class MediaKey {
         String oldRelativeName = createOldRelativePath(originalFile);
 
         if (metaDataService.isSupportedFile(originalFile.toFile())) {
-            String newName = mediaKey.generateFilename(originalFile.toFile());
+            String newName = mediaFilename.generateFilename(originalFile.toFile());
 
             String newRelativeName = createNewRelativePath(originalFile, newName);
 
@@ -299,13 +300,13 @@ public class MediaKey {
     }
 
     /**
-     * Generate the filename with the sig generator for the given mediaFile and configured timezone.
+     * Generate the filename with the filename generator for the given mediaFile and configured timezone.
      * @param mediaFile The input mediaFile
      * @return The generated signature
      */
     public String generateFilename(File mediaFile) {
         MetaData meta = metaDataService.metadataFromFile(mediaFile);
-        String sig = sigGen.createUtcTimeZoneFilenameSig(meta);
+        String sig = sigGen.createUtcTimeZoneFilename(meta);
         log.info("Capture datetime: {}. Result: {}.", meta.getCaptureDateTime(), sig);
         return sig;
     }

@@ -1,4 +1,4 @@
-package net.marmier.mediakey;
+package net.marmier.mediafilename;
 
 import org.junit.Test;
 
@@ -9,7 +9,7 @@ import static org.junit.Assert.*;
 /**
  * Added by raphael on 07.02.16.
  */
-public class MediaKeyTest {
+public class MediaFilenameTest {
 
     @Test
     public void testGetParent() {

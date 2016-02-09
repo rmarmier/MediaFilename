@@ -1,4 +1,4 @@
-package net.marmier.mediakey.metadata.exif;
+package net.marmier.mediafilename.metadata.exif;
 
 /**
  * Added by raphael on 11.12.15.
