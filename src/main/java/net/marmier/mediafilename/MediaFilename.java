@@ -20,76 +20,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * <h4>Purpose</h4>
- * <p>
- *     To generate new filenames for media files, so files from different sources can be archived together
- *     with a consistent ordering.
- * </p>
- *
- * <h4>Arguments</h4>
- * <p>
- *     1) A timezone definition, from those defined in the Offset class. For historical reasons and compatibility
- *     with an older tool.
- * </p>
- * <p>
- *     2) A file or directory containing targeted media files.
- * </p>
- *
- * <h4>Behaviour</h4>
- * <p>
- *     The tool first determines the working directory. The parent directory of the targeted file or directory
- *     will be used, unless the given path is relative, in which case the user.dir system property will be assumed
- *     to be the desired working directory.
- * </p>
- * <p>
- *     If a directory has been given, it is traversed recursively is search for supported media files.
- * </p>
- * <p>
- *     The tool generates a rename command for each supported media files. It embeds the UTC time and the
- *     timezone into the new filename so the usual alphanumerical sort will keep files in chronological order.
- * </p>
-
- * <h4>Format of the generated filenames</h4>
- * <p>
- *     The new name for the media file implement the following format:
- * </p>
- * <p>
- *     <strong>[Year]-[Month]-[Day]_[hours][minutes][seconds]utc_tz[timezone]_[original file name]</strong>
- * </p>
- *     Example:<br>
- *     2015-12-03_074904utc_tz+0100_DSC_5926.JPG
- *<p>
- *     This format allows the natural ordering of media files from various origins according to
- *     the time of capture, independently of the timezone.
- *</p>
- * <h4>Supported media files</h4>
- *
- * <table>
- * <tr>
- *     <th>File type</th><th>EXIF field</th><th>Explanation</th>
- * </tr>
- * <tr>
- *     <td>JPEG</td><td>DateTimeOriginal</td><td>Generic support for JPEG files, indifferent of camera make.</td>
- * </tr>
- * <tr>
- *     <td>Nikon NEF</td><td>DateTimeOriginal</td><td>Support for Nikon NEF raw format pictures.</td>
- * </tr>
- * </table>
- *
- * <h4>How to use the result</h4>
- * <p>
- *     The tool sends the rename command simultaneously to the standard output and to a shell command file in the
- *     working directory. The command file can be executed or sourced in place.
- * </p><p>
- *     Additionally, it produces two log files, one detailing the processing and one for errors only (for historical
- *     and compatibility reasons with an earlier GUI wrapper).
- * </p>
- *
- * <h4>System requirements</h4>
- * <ul>
- *     <li>Java 8</li>
- *     <li>ExifTool by Phil Harvey</li>
- * </ul>
+ * To generate new filenames for media files, so files from different sources can be archived together
+ * with a consistent ordering. Please refer to the accompanying README.md for instructions.
  *
  * <h4>Version history</h4>
  * v 1.0 - 2016-02-10 - Initial usable version.
