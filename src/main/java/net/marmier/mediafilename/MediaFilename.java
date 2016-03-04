@@ -20,11 +20,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * To generate new filenames for media files, so files from different sources can be archived together
+ * Generate new filenames for media files, so files from different sources can be archived together
  * with a consistent ordering. Please refer to the accompanying README.md for instructions.
  *
  * <h4>Version history</h4>
- * v 1.0 - 2016-02-10 - Initial usable version.
+ * v 1.0 - 2016-02-26 - Initial usable version.
  *
  * Added by raphael on 29.11.15.
  */

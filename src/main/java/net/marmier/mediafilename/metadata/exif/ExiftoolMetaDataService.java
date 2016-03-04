@@ -1,6 +1,7 @@
 package net.marmier.mediafilename.metadata.exif;
 
 import com.thebuzzmedia.exiftool.ExifTool;
+import com.thebuzzmedia.exiftool.ExifToolBuilder;
 import net.marmier.mediafilename.metadata.MetaData;
 import net.marmier.mediafilename.metadata.MetaDataService;
 
@@ -64,6 +65,6 @@ public class ExiftoolMetaDataService implements MetaDataService {
     }
 
     public ExifTool getTool() {
-        return new ExifTool();
+        return new ExifToolBuilder().build();
     }
 }
