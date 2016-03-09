@@ -11,7 +11,7 @@ To generate new filenames for media files, so files from different sources can b
 
 The tool first determines the working directory. The parent directory of the targeted file or directory will be used, unless the given path is relative, in which case the user.dir system property will be assumed to be the desired working directory.
 
-If a directory has been given, it is traversed recursively is search for supported media files.
+If a directory has been given, it is traversed recursively in search for supported media files.
 
 The tool generates a rename command for each supported media files. It embeds the UTC time and the timezone into the new filename so the usual alphanumerical sort will keep files in chronological order.
 
@@ -48,4 +48,4 @@ Additionally, it produces two log files, one detailing the processing and one fo
 * ExifTool by Phil Harvey
 
 #Version history
-v 1.0 - 2016-02-10 - Initial usable version.
+v 1.0 - 2016-03-09 - Initial usable version.
