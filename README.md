@@ -49,3 +49,6 @@ Additionally, it produces two log files, one detailing the processing and one fo
 
 #Version history
 v 1.0 - 2016-03-09 - Initial usable version.
+
+# Author
+Raphaël Marmier
