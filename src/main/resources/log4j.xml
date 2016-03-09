@@ -27,14 +27,6 @@
     </layout>
   </appender>
 
-  <logger name="main">
-    <level value="DEBUG"/>
-  </logger>
-
-  <logger name="test">
-    <level value="DEBUG"/>
-  </logger>
-
   <logger name="*">
     <level value="DEBUG"/>
   </logger>
