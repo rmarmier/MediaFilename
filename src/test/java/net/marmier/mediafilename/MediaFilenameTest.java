@@ -32,6 +32,12 @@ public class MediaFilenameTest {
             assertEquals("parentdirectory", targetFile.getParent());
         }
 
+        // Case of many
+        {
+            File targetFile = new File("parentdirectory/directory/another/level");
+            assertEquals("parentdirectory/directory/another", targetFile.getParent());
+        }
+
         // Case of relative path
         {
             File targetFile = new File("directory");

@@ -58,4 +58,14 @@ public class ExiftoolMetaDataServiceTest {
 
         Assert.assertEquals(expected, filename);
     }
+
+    @Test
+    public void testFilenameGenerationAppleiPhoneMov() {
+       String expected = "2016-05-03_181526utc_tz+0200_iphone6_ios84.MOV";
+
+        MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/apple");
+        String filename = mediaFilename.generateFilename(new File("src/test/resources/apple/iphone6_ios84.MOV"));
+
+        Assert.assertEquals(expected, filename);
+    }
 }

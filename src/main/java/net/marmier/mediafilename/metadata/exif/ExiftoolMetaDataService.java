@@ -18,14 +18,17 @@ public class ExiftoolMetaDataService implements MetaDataService {
 
     private ExifProfile jpgProfile;
     private ExifProfile nikonNefProfile;
+    private ExifProfile iPhoneMovProfile;
 
     Pattern jpgPattern = Pattern.compile(".+\\.(jpg|JPG|jpeg|JPEG)$");
     Pattern nikonNefPattern = Pattern.compile(".+\\.(nef|NEF)$");
+    Pattern movPattern = Pattern.compile(".+\\.(mov|MOV)$");
 
 
     public ExiftoolMetaDataService() {
         jpgProfile = new JpgProfile();
         nikonNefProfile = new NikonNefProfile();
+        iPhoneMovProfile = new AppleiPhoneMovProfile();
 
         //tool = new ExifTool(ExifTool.Feature.STAY_OPEN);
     }
@@ -55,11 +58,14 @@ public class ExiftoolMetaDataService implements MetaDataService {
     }
 
     private ExifProfile getProfile(File file) {
-        if (jpgPattern.matcher(file.toString()).matches()) {
+        String input = file.toString();
+        if (jpgPattern.matcher(input).matches()) {
             return jpgProfile;
         }
-        else if (nikonNefPattern.matcher(file.toString()).matches()) {
+        else if (nikonNefPattern.matcher(input).matches()) {
             return nikonNefProfile;
+        } else if (movPattern.matcher(input).matches()) {
+            return iPhoneMovProfile;
         }
         return null;
     }

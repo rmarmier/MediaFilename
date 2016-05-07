@@ -18,9 +18,12 @@ import java.util.Map;
  */
 public class NikonNefProfile implements ExifProfile {
 
+    /* "DateTimeOriginal" */
+    private final StandardTag dateTimeField = StandardTag.DATE_TIME_ORIGINAL;
+
     public MetaData convert(File file, ExifTool tool) throws IOException {
-        Map<Tag, String> valueMap = tool.getImageMeta(file, Collections.singletonList(StandardTag.DATE_TIME_ORIGINAL));
-        String val = valueMap.get(StandardTag.DATE_TIME_ORIGINAL);
-        return val == null ? null : new PhotoMetaData(LocalDateTime.parse(val, DateTimeFormatter.ofPattern("y:M:d H:m:s")), file.getName());
+        Map<Tag, String> valueMap = tool.getImageMeta(file, Collections.singletonList(dateTimeField));
+        String dateTime = valueMap.get(dateTimeField);
+        return dateTime == null ? null : new PhotoMetaData(LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("y:M:d H:m:s")), file.getName());
     }
 }
