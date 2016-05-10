@@ -1,9 +1,9 @@
 package net.marmier.mediafilename;
 
+import net.marmier.mediafilename.filename.FilenameGenerator;
 import net.marmier.mediafilename.metadata.MetaData;
 import net.marmier.mediafilename.metadata.MetaDataService;
 import net.marmier.mediafilename.metadata.exif.ExiftoolMetaDataService;
-import net.marmier.mediafilename.filename.FilenameGenerator;
 import net.marmier.mediafilename.timezone.Offset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -199,8 +199,8 @@ public class MediaFilename {
 
         String oldRelativeName = createOldRelativePath(originalFile);
 
-        if (metaDataService.isSupportedFile(originalFile.toFile())) {
-            String newName = mediaFilename.generateFilename(originalFile.toFile());
+        String newName = mediaFilename.tryGenerateFilename(originalFile.toFile());
+        if (newName != null) {
 
             String newRelativeName = createNewRelativePath(originalFile, newName);
 
@@ -236,8 +236,11 @@ public class MediaFilename {
      * @param mediaFile The input mediaFile
      * @return The generated signature
      */
-    public String generateFilename(File mediaFile) {
+    public String tryGenerateFilename(File mediaFile) {
         MetaData meta = metaDataService.metadataFromFile(mediaFile);
+        if (meta == null) {
+            return null;
+        }
         String sig = sigGen.createUtcTimeZoneFilename(meta);
         log.info("Capture datetime: {}. Result: {}.", meta.getCaptureDateTime(), sig);
         return sig;

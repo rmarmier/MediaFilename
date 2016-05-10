@@ -12,16 +12,21 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Added by raphael on 25.12.15.
  */
-public class NikonNefProfile implements ExifProfile {
+public class NikonNefProfile extends AbstractExifProfile {
 
     /* "DateTimeOriginal" */
     private final StandardTag dateTimeField = StandardTag.DATE_TIME_ORIGINAL;
 
-    public MetaData convert(File file, ExifTool tool) throws IOException {
+    public NikonNefProfile() {
+        super(Pattern.compile(".+\\.(nef|NEF)$"));
+    }
+
+    public MetaData extractMeta(File file, ExifTool tool) throws IOException {
         Map<Tag, String> valueMap = tool.getImageMeta(file, Collections.singletonList(dateTimeField));
         String dateTime = valueMap.get(dateTimeField);
         return dateTime == null ? null : new PhotoMetaData(LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("y:M:d H:m:s")), file.getName());

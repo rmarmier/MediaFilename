@@ -44,7 +44,7 @@ public class ExiftoolMetaDataServiceTest {
         String expected = "2015-10-27_120816utc_tz+0100_DSC_5303.NEF";
 
         MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+1"), "src/test/resources/nikon");
-        String filename = mediaFilename.generateFilename(new File("src/test/resources/nikon/DSC_5303.NEF"));
+        String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSC_5303.NEF"));
 
         Assert.assertEquals(expected, filename);
     }
@@ -54,7 +54,7 @@ public class ExiftoolMetaDataServiceTest {
         String expected = "2015-10-18_145029utc_tz+0200_DSC_4180.JPG";
 
         MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/nikon");
-        String filename = mediaFilename.generateFilename(new File("src/test/resources/nikon/DSC_4180.JPG"));
+        String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSC_4180.JPG"));
 
         Assert.assertEquals(expected, filename);
     }
@@ -64,7 +64,7 @@ public class ExiftoolMetaDataServiceTest {
        String expected = "2016-05-03_181526utc_tz+0200_iphone6_ios84.MOV";
 
         MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/apple");
-        String filename = mediaFilename.generateFilename(new File("src/test/resources/apple/iphone6_ios84.MOV"));
+        String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/apple/iphone6_ios84.MOV"));
 
         Assert.assertEquals(expected, filename);
     }

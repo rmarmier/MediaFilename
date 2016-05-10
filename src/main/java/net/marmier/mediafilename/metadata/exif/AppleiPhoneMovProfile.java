@@ -9,16 +9,16 @@ import net.marmier.mediafilename.metadata.PhotoMetaData;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Added by raphael on 25.12.15.
  */
-public class AppleiPhoneMovProfile implements ExifProfile {
+public class AppleiPhoneMovProfile extends AbstractExifProfile {
 
     /*
         MOV file created by apple's iPhone models have a "DateTimeOriginal" field set
@@ -38,7 +38,11 @@ public class AppleiPhoneMovProfile implements ExifProfile {
     /* "CreationDate" */
     private final StandardTag dateTimeField = StandardTag.CREATION_DATE;
 
-    public MetaData convert(File file, ExifTool tool) throws IOException {
+    public AppleiPhoneMovProfile() {
+        super(Pattern.compile(".+\\.(mov|MOV)$"));
+    }
+
+    public MetaData extractMeta(File file, ExifTool tool) throws IOException {
         List<Tag> tags = Arrays.asList(new StandardTag[] { dateTimeField, modelField, makeField });
         Map<Tag, String> valueMap = tool.getImageMeta(file, tags);
         String model = valueMap.get(modelField);
