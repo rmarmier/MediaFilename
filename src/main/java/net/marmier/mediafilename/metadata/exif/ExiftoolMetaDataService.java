@@ -23,6 +23,7 @@ public class ExiftoolMetaDataService implements MetaDataService {
         registeredProfiles.add(new JpgProfile());
         registeredProfiles.add(new NikonNefProfile());
         registeredProfiles.add(new AppleiPhoneMovProfile());
+        registeredProfiles.add(new MovProfile());
 
         //tool = new ExifTool(ExifTool.Feature.STAY_OPEN);
     }
