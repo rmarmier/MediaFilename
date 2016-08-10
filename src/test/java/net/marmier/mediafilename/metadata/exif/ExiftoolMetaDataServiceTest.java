@@ -74,10 +74,10 @@ public class ExiftoolMetaDataServiceTest {
 
         {
             // Nikon E5200 movie
-            String expected = "2007-07-13_145238utc_tz+0200_DSCN6224.MOV";
+            String expected = "2016-07-07_192055utc_tz+0200_DSCN7778.MOV";
 
             MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/nikon");
-            String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSCN6224.MOV"));
+            String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSCN7778.MOV"));
 
             Assert.assertEquals(expected, filename);
         }
