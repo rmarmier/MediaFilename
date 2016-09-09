@@ -206,8 +206,7 @@ public class MediaFilename {
 
             return new Result(oldRelativeName, newRelativeName);
         }
-
-        log.info("File has unrecognized extension: ignored ({})", oldRelativeName);
+        log.error("File could not be processed: ignored ({})", oldRelativeName);
         return null;
     }
 
