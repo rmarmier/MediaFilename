@@ -1,6 +1,7 @@
 package net.marmier.mediafilename.metadata.exif;
 
-import net.marmier.mediafilename.MediaFilename;
+import net.marmier.mediafilename.MediaProcessor;
+import net.marmier.mediafilename.MediaProcessorImpl;
 import net.marmier.mediafilename.metadata.MetaData;
 import net.marmier.mediafilename.metadata.MetaDataService;
 import net.marmier.mediafilename.timezone.Offset;
@@ -43,8 +44,8 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationNEF() {
         String expected = "2015-10-27_120816utc_tz+0100_DSC_5303.NEF";
 
-        MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+1"), "src/test/resources/nikon");
-        String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSC_5303.NEF"));
+        MediaProcessorImpl mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+1"), "src/test/resources/nikon");
+        String filename = mediaProcessor.generateFilename(new File("src/test/resources/nikon/DSC_5303.NEF"));
 
         Assert.assertEquals(expected, filename);
     }
@@ -53,8 +54,8 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationJPG() {
         String expected = "2015-10-18_145029utc_tz+0200_DSC_4180.JPG";
 
-        MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/nikon");
-        String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSC_4180.JPG"));
+        MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), "src/test/resources/nikon");
+        String filename = mediaProcessor.generateFilename(new File("src/test/resources/nikon/DSC_4180.JPG"));
 
         Assert.assertEquals(expected, filename);
     }
@@ -63,8 +64,8 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationAppleiPhoneMov() {
         String expected = "2016-05-03_181526utc_tz+0200_iphone6_ios84.MOV";
 
-        MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/apple");
-        String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/apple/iphone6_ios84.MOV"));
+        MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), "src/test/resources/apple");
+        String filename = mediaProcessor.generateFilename(new File("src/test/resources/apple/iphone6_ios84.MOV"));
 
         Assert.assertEquals(expected, filename);
     }
@@ -76,8 +77,8 @@ public class ExiftoolMetaDataServiceTest {
             // Nikon E5200 movie
             String expected = "2016-07-07_192055utc_tz+0200_DSCN7778.MOV";
 
-            MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+2"), "src/test/resources/nikon");
-            String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/nikon/DSCN7778.MOV"));
+            MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), "src/test/resources/nikon");
+            String filename = mediaProcessor.generateFilename(new File("src/test/resources/nikon/DSCN7778.MOV"));
 
             Assert.assertEquals(expected, filename);
         }
@@ -85,8 +86,8 @@ public class ExiftoolMetaDataServiceTest {
             // Sample Quicktime movie
             String expected = "2005-10-17_215434utc_tz+0100_sample_iTunes.mov";
 
-            MediaFilename mediaFilename = new MediaFilename(Offset.forCode("UTC+1"), "src/test/resources/apple/qt_samples");
-            String filename = mediaFilename.tryGenerateFilename(new File("src/test/resources/apple/qt_samples/sample_iTunes.mov"));
+            MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+1"), "src/test/resources/apple/qt_samples");
+            String filename = mediaProcessor.generateFilename(new File("src/test/resources/apple/qt_samples/sample_iTunes.mov"));
 
             Assert.assertEquals(expected, filename);
         }

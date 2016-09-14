@@ -1,5 +1,7 @@
 package net.marmier.mediafilename.metadata;
 
+import net.marmier.mediafilename.metadata.exif.ExiftoolMetaDataServiceException;
+
 import java.io.File;
 
 /**
@@ -7,5 +9,5 @@ import java.io.File;
  */
 public interface MetaDataService {
 
-    MetaData metadataFromFile(File file);
+    MetaData metadataFromFile(File file) throws ExiftoolMetaDataServiceException;
 }

@@ -29,7 +29,7 @@ public class ExiftoolMetaDataService implements MetaDataService {
     }
 
     @Override
-    public MetaData metadataFromFile(File file) {
+    public MetaData metadataFromFile(File file) throws ExiftoolMetaDataServiceException {
 
         try {
             for (ExifProfile profile : registeredProfiles) {

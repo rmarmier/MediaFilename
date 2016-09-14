@@ -1,9 +1,5 @@
 package net.marmier.mediafilename;
 
-import net.marmier.mediafilename.filename.FilenameGenerator;
-import net.marmier.mediafilename.metadata.MetaData;
-import net.marmier.mediafilename.metadata.MetaDataService;
-import net.marmier.mediafilename.metadata.exif.ExiftoolMetaDataService;
 import net.marmier.mediafilename.timezone.Offset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,12 +7,11 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,20 +25,7 @@ import java.util.List;
  */
 public class MediaFilename {
 
-    private static MediaFilename mediaFilename;
-
     private Logger log = LoggerFactory.getLogger(MediaFilename.class);
-
-    private MetaDataService metaDataService = new ExiftoolMetaDataService();
-
-    private FilenameGenerator sigGen;
-
-    private final Path workingDirectory;
-
-    public MediaFilename(Offset code, String workingDirectory) {
-        sigGen = new FilenameGenerator(code);
-        this.workingDirectory = new File(workingDirectory).toPath();
-    }
 
     public static void main(String args[]) throws IOException {
         LocalDateTime launchTime = LocalDateTime.now();
@@ -84,10 +66,10 @@ public class MediaFilename {
             System.setProperty("errorsfilename", workingDirectory + "/" + filenameBase + "_errors");
 
             // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
-            mediaFilename = new MediaFilename(offset, workingDirectory);
+            MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
 
             // Process the media files and get the results
-            final List<Result> results = mediaFilename.process(targetFile);
+            final List<MediaProcessor.Result> results = mediaProcessor.process(targetFile);
 
             // Generate the command targetFile
             writeResult(commandFile, results);
@@ -120,11 +102,11 @@ public class MediaFilename {
         return offset;
     }
 
-    private static void writeResult(Path commandFile, List<Result> results) throws IOException {
+    private static void writeResult(Path commandFile, List<MediaProcessor.Result> results) throws IOException {
         backupIfExist(commandFile);
         try (BufferedWriter writer = Files.newBufferedWriter(commandFile, StandardOpenOption.CREATE_NEW)) {
-            for (Result result : results) {
-                String command = String.format("mv \'%s\' \'%s\'", result.before, result.after);
+            for (MediaProcessor.Result result : results) {
+                String command = String.format("mv \'%s\' \'%s\'", result.getBefore(), result.getAfter());
                 System.out.println(command);
                 writer.write(command);
                 writer.write("\n");
@@ -151,97 +133,5 @@ public class MediaFilename {
         if (additionalInfo != null) {
             System.err.println(additionalInfo);
         }
-    }
-
-    private List<Result> process(File file) throws IOException {
-        if (file.isDirectory()) {
-            return processDirectory(file.toPath());
-        } else {
-            Result result = processFile(file.toPath());
-            if (result != null) {
-                return Collections.singletonList(result);
-            }
-            else {
-                return Collections.emptyList();
-            }
-        }
-    }
-
-    private List<Result> processDirectory(Path targetDirectory) throws IOException {
-        final List<Result> results = new ArrayList<>();
-        Files.walkFileTree(targetDirectory, new FileVisitor<Path>() {
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Result result = processFile(file);
-                if (result != null) {
-                    results.add(result);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                exc.printStackTrace();
-                return FileVisitResult.CONTINUE;
-            }
-
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        return results;
-    }
-
-    private Result processFile(Path originalFile) {
-        log.info("Processing {}", originalFile.getFileName());
-
-        String oldRelativeName = createOldRelativePath(originalFile);
-
-        String newName = mediaFilename.tryGenerateFilename(originalFile.toFile());
-        if (newName != null) {
-
-            String newRelativeName = createNewRelativePath(originalFile, newName);
-
-            return new Result(oldRelativeName, newRelativeName);
-        }
-        log.error("File could not be processed: ignored ({})", oldRelativeName);
-        return null;
-    }
-
-    private String createNewRelativePath(Path originalFile, String newName) {
-        Path parentDir = originalFile.getParent();
-        String newRelativeParent = workingDirectory.relativize(parentDir.toAbsolutePath()).toString();
-        return String.format("%s%s", newRelativeParent + "/", newName);
-    }
-
-    private String createOldRelativePath(Path originalFile) {
-        return workingDirectory.relativize(originalFile.toAbsolutePath()).toString();
-    }
-
-    static class Result {
-        private final String before;
-        private final String after;
-
-        public Result(String before, String after) {
-            this.before = before;
-            this.after = after;
-        }
-    }
-
-    /**
-     * Generate the filename with the filename generator for the given mediaFile and configured timezone.
-     * @param mediaFile The input mediaFile
-     * @return The generated signature
-     */
-    public String tryGenerateFilename(File mediaFile) {
-        MetaData meta = metaDataService.metadataFromFile(mediaFile);
-        if (meta == null) {
-            return null;
-        }
-        String sig = sigGen.createUtcTimeZoneFilename(meta);
-        log.info("Capture datetime: {}. Result: {}.", meta.getCaptureDateTime(), sig);
-        return sig;
     }
 }
