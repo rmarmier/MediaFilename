@@ -15,6 +15,8 @@ If a directory has been given, it is traversed recursively in search for support
 
 The tool generates a rename command for each supported media files. It embeds the UTC time and the timezone into the new filename so the usual alphanumerical sort will keep files in chronological order.
 
+In addition, the tool does a second pass to try to match any unsupported companion file like *.xmp to its master's basename and rename it accordingly.
+
 #Format of the generated filenames
 
 The new name for the media file implement the following format:

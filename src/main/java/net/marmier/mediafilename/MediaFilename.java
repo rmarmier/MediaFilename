@@ -1,5 +1,6 @@
 package net.marmier.mediafilename;
 
+import net.marmier.mediafilename.filename.FilenameHelper;
 import net.marmier.mediafilename.timezone.Offset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,12 +8,11 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.*;
 
 /**
  * Generate new filenames for media files, so files from different sources can be archived together
@@ -25,7 +25,9 @@ import java.util.List;
  */
 public class MediaFilename {
 
-    private Logger log = LoggerFactory.getLogger(MediaFilename.class);
+    private static Logger log = LoggerFactory.getLogger(MediaFilename.class);
+
+    private static Path workingDirectory;
 
     public static void main(String args[]) throws IOException {
         LocalDateTime launchTime = LocalDateTime.now();
@@ -65,15 +67,128 @@ public class MediaFilename {
             // Initialize the error log fileArgumentName dynamically. This work provided we use non-static loggers.
             System.setProperty("errorsfilename", workingDirectory + "/" + filenameBase + "_errors");
 
+            MediaFilename.workingDirectory = new File(workingDirectory).toPath();
+
+
+            // Map to contain all entries, with the full original path as the key. Order must be preserved.
+            Map<String, String> allFilesMap = new LinkedHashMap<>();
+            // Map to contain result entries, with the original path stripped of extension as the key.
+            Map<String, String> onlyResultsMap = new TreeMap<>();
+
+            // Initialize the all files map with entries without result.
+            for (String originalPath : scan(targetFile)) {
+                allFilesMap.put(originalPath, null);
+            }
+
             // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
             MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
 
+            /*
+                First pass to process supported files
+              */
+            log.info("First pass: processing known extensions");
+
             // Process the media files and get the results
             final List<MediaProcessor.Result> results = mediaProcessor.process(targetFile);
+            // Add just the result to the result map
+            for (MediaProcessor.Result result : results) {
+                log.info("Caching result {} {}", result.getBefore(), result.getAfter());
+                allFilesMap.put(result.getBefore(), result.getAfter());
+
+                onlyResultsMap.put(FilenameHelper.stripExtension(result.getBefore()), result.getAfter());
+            }
+
+            /*
+                Second pass to match companion files to their master and use its new filename.
+             */
+            log.info("Second pass: matching companion files");
+
+            for (Map.Entry<String, String> entry : allFilesMap.entrySet()) {
+                if (entry.getValue() == null) { // Select entries missing a result
+                    String filepath = entry.getKey();
+                    String pathWithoutExtension = FilenameHelper.stripExtension(filepath);
+                    if (pathWithoutExtension == null || pathWithoutExtension.isEmpty()) {
+                        System.err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
+                        continue;
+                    }
+                    log.info("File: {} {}", entry.getKey(), pathWithoutExtension);
+                    String result = onlyResultsMap.get(pathWithoutExtension);
+                    log.info("Found result: {}", result);
+                    if (result != null && !result.isEmpty()) { // Just to be safe
+                        String resultFilenameCore = FilenameHelper.stripExtension(result);
+                        if (resultFilenameCore == null || resultFilenameCore.isEmpty()) {
+                            System.err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
+                            continue;
+                        }
+                        String extension = FilenameHelper.getExtension(entry.getKey());
+                        String newfilename = resultFilenameCore + "." + extension;
+                        allFilesMap.put(entry.getKey(), newfilename);
+                        log.info("Corresponding filename: {} {}", entry.getKey(), newfilename);
+                    } else {
+                        System.err.println(String.format("No matching filename for file: %s. Skipping.", entry.getKey()));
+                    }
+                }
+            }
 
             // Generate the command targetFile
-            writeResult(commandFile, results);
+            backupIfExist(commandFile);
+            writeResult(commandFile, allFilesMap);
         }
+    }
+
+    public static List<String> scan(File file) throws MediaProcessorException {
+        if (file.isDirectory()) {
+            return scanDirectory(file.toPath());
+        } else {
+            String result = scanFile(file.toPath());
+            if (result != null) {
+                return Collections.singletonList(result);
+            }
+            else {
+                return Collections.emptyList();
+            }
+        }
+    }
+
+    public static List<String> scanDirectory(Path targetDirectory) throws MediaProcessorException {
+        final List<String> results = new ArrayList<>();
+        try {
+            Files.walkFileTree(targetDirectory, new FileVisitor<Path>() {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    String result = scanFile(file);
+                    if (result != null) {
+                        results.add(result);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    exc.printStackTrace();
+                    return FileVisitResult.CONTINUE;
+                }
+
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new MediaProcessorException("An error occured while processing directory " + targetDirectory.toString(), e);
+        }
+        return results;
+    }
+
+    public static String scanFile(Path originalFile) throws MediaProcessorException {
+        log.info("Collecting {}", originalFile.getFileName());
+
+        return createOldRelativePath(originalFile);
+    }
+
+    private static String createOldRelativePath(Path originalFile) {
+        return workingDirectory.relativize(originalFile.toAbsolutePath()).toString();
     }
 
     /**
@@ -102,11 +217,10 @@ public class MediaFilename {
         return offset;
     }
 
-    private static void writeResult(Path commandFile, List<MediaProcessor.Result> results) throws IOException {
-        backupIfExist(commandFile);
+    private static void writeResult(Path commandFile, Map<String, String> allFiles) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(commandFile, StandardOpenOption.CREATE_NEW)) {
-            for (MediaProcessor.Result result : results) {
-                String command = String.format("mv \'%s\' \'%s\'", result.getBefore(), result.getAfter());
+            for (Map.Entry<String, String> result : allFiles.entrySet()) {
+                String command = String.format("mv \'%s\' \'%s\'", result.getKey(), result.getValue());
                 System.out.println(command);
                 writer.write(command);
                 writer.write("\n");
