@@ -110,20 +110,20 @@ public class MediaProcessorImpl implements MediaProcessor {
     }
 
     static class ResultImpl implements Result {
-        private final String before;
-        private final String after;
+        private final String oldRelativeName;
+        private final String newRelativeName;
 
-        public ResultImpl(String before, String after) {
-            this.before = before;
-            this.after = after;
+        ResultImpl(String oldRelativeName, String newRelativeName) {
+            this.oldRelativeName = oldRelativeName;
+            this.newRelativeName = newRelativeName;
         }
 
-        public String getBefore() {
-            return before;
+        public String getOldRelativeName() {
+            return oldRelativeName;
         }
 
-        public String getAfter() {
-            return after;
+        public String getNewRelativeName() {
+            return newRelativeName;
         }
     }
 

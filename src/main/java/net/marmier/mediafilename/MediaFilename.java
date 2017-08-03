@@ -2,12 +2,15 @@ package net.marmier.mediafilename;
 
 import net.marmier.mediafilename.filename.FilenameHelper;
 import net.marmier.mediafilename.timezone.Offset;
+import net.marmier.mediafilename.ui.PhotoFilenameConverterFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
@@ -30,110 +33,144 @@ public class MediaFilename {
     private static Path workingDirectory;
 
     public static void main(String args[]) throws IOException {
-        LocalDateTime launchTime = LocalDateTime.now();
+        Offset offset;
+        File targetFile;
 
-        if (args.length < 2) {
+        if (args.length < 1) {
             showUsage(null);
+            System.exit(1);
+        }
+        String firstArgument = args[0];
+        if (args.length == 1 && "--run-with-ui".equals(firstArgument)) {
+            startUi();
+        }
+        else if (args.length < 2) {
+            showUsage(null);
+            System.exit(1);
         } else {
-
             // Decode the timezone offset
-            Offset offset = decodeCode(args[0]);
+            offset = decodeCode(firstArgument);
 
             // Get the fileArgumentName parameter
-            File targetFile = new File(args[1]);
+            String argument1 = args[1];
+            targetFile = new File(argument1);
 
-            // Determine the working directory. We fall back on the system property if that fails.
-            String workingDirectory = getWorkingDirectory(targetFile);
+            realStart(offset, targetFile, new PrintStreamAppender(System.err), new PrintStreamAppender(System.out));
+        }
+    }
 
-            System.err.println("targetFile: " + targetFile);
-            System.err.println("workingDirectory: " + workingDirectory);
-
-            Path commandFile;
-
-            // Assemble the output files basename
-            String filenameBase = String.format(
-                "Importation_%s_%s_tz%s",
-                launchTime.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                targetFile.getName(), offset.toString()
-            );
-            System.err.println("filenameBase: " + filenameBase);
-
-            // Prepare the command targetFile name
-            commandFile = new File(workingDirectory + "/" + filenameBase + ".sh").toPath();
-
-            // Initialize the log fileArgumentName dynamically. This work provided we use non-static loggers.
-            System.setProperty("logfilename", workingDirectory + "/" + filenameBase);
-
-            // Initialize the error log fileArgumentName dynamically. This work provided we use non-static loggers.
-            System.setProperty("errorsfilename", workingDirectory + "/" + filenameBase + "_errors");
-
-            MediaFilename.workingDirectory = new File(workingDirectory).toPath();
-
-
-            // Map to contain all entries, with the full original path as the key. Order must be preserved.
-            Map<String, String> allFilesMap = new LinkedHashMap<>();
-            // Map to contain result entries, with the original path stripped of extension as the key.
-            Map<String, String> onlyResultsMap = new TreeMap<>();
-
-            // Initialize the all files map with entries without result.
-            for (String originalPath : scan(targetFile)) {
-                allFilesMap.put(originalPath, null);
+    private static void startUi() {
+        //Schedule a job for the event-dispatching thread:
+        //creating and showing this application's GUI.
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                createAndShowGUI();
             }
+        });
+    }
 
-            // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
-            MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
+    private static void createAndShowGUI() {
+        //Create and set up the window.
+        JFrame frame = new PhotoFilenameConverterFrame();
+
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+    public static void realStart(Offset offset, File targetFile, OutputAppender err, OutputAppender out) throws IOException {
+        LocalDateTime launchTime = LocalDateTime.now();
+
+        // Determine the working directory. We fall back on the system property if that fails.
+        String workingDirectory = getWorkingDirectory(targetFile);
+
+        err.println("targetFile: " + targetFile);
+        err.println("workingDirectory: " + workingDirectory);
+
+        Path commandFile;
+
+        // Assemble the output files basename
+        String filenameBase = String.format(
+            "Importation_%s_%s_tz%s",
+            launchTime.format(DateTimeFormatter.ISO_LOCAL_DATE),
+            targetFile.getName(), offset.toString()
+        );
+        err.println("filenameBase: " + filenameBase);
+
+        // Prepare the command targetFile name
+        commandFile = new File(workingDirectory + "/" + filenameBase + ".sh").toPath();
+
+        // Initialize the log fileArgumentName dynamically. This work provided we use non-static loggers.
+        System.setProperty("logfilename", workingDirectory + "/" + filenameBase);
+
+        // Initialize the error log fileArgumentName dynamically. This work provided we use non-static loggers.
+        System.setProperty("errorsfilename", workingDirectory + "/" + filenameBase + "_errors");
+
+        MediaFilename.workingDirectory = new File(workingDirectory).toPath();
+
+        // Map to contain all entries, with the full original path as the key. Order must be preserved.
+        Map<String, String> allFilesByPath = new LinkedHashMap<>();
+        // Map to contain result entries, with the original path stripped of extension as the key.
+        Map<String, String> resultsByPath = new TreeMap<>();
+
+        // Initialize the all files map with entries without result.
+        for (String originalPath : scan(targetFile)) {
+            allFilesByPath.put(originalPath, null);
+        }
+
+        // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
+        MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
 
             /*
                 First pass to process supported files
               */
-            log.info("First pass: processing known extensions");
+        log.info("First pass: processing known extensions");
 
-            // Process the media files and get the results
-            final List<MediaProcessor.Result> results = mediaProcessor.process(targetFile);
-            // Add just the result to the result map
-            for (MediaProcessor.Result result : results) {
-                log.info("Caching result {} {}", result.getBefore(), result.getAfter());
-                allFilesMap.put(result.getBefore(), result.getAfter());
+        // Process the media files and get the results
+        final List<MediaProcessor.Result> results = mediaProcessor.process(targetFile);
+        // Add just the result to the result map
+        for (MediaProcessor.Result result : results) {
+            log.info("Caching result {} {}", result.getOldRelativeName(), result.getNewRelativeName());
+            allFilesByPath.put(result.getOldRelativeName(), result.getNewRelativeName());
 
-                onlyResultsMap.put(FilenameHelper.stripExtension(result.getBefore()), result.getAfter());
-            }
+            resultsByPath.put(FilenameHelper.stripExtension(result.getOldRelativeName()), result.getNewRelativeName());
+        }
 
             /*
                 Second pass to match companion files to their master and use its new filename.
              */
-            log.info("Second pass: matching companion files");
+        log.info("Second pass: matching companion files");
 
-            for (Map.Entry<String, String> entry : allFilesMap.entrySet()) {
-                if (entry.getValue() == null) { // Select entries missing a result
-                    String filepath = entry.getKey();
-                    String pathWithoutExtension = FilenameHelper.stripExtension(filepath);
-                    if (pathWithoutExtension == null || pathWithoutExtension.isEmpty()) {
-                        System.err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
+        for (Map.Entry<String, String> entry : allFilesByPath.entrySet()) {
+            if (entry.getValue() == null) { // Select entries missing a result
+                String filepath = entry.getKey();
+                String pathWithoutExtension = FilenameHelper.stripExtension(filepath);
+                if (pathWithoutExtension == null || pathWithoutExtension.isEmpty()) {
+                    err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
+                    continue;
+                }
+                log.info("File: {} {}", entry.getKey(), pathWithoutExtension);
+                String result = resultsByPath.get(pathWithoutExtension);
+                log.info("Found result: {}", result);
+                if (result != null && !result.isEmpty()) { // Just to be safe
+                    String resultFilenameCore = FilenameHelper.stripExtension(result);
+                    if (resultFilenameCore == null || resultFilenameCore.isEmpty()) {
+                        err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
                         continue;
                     }
-                    log.info("File: {} {}", entry.getKey(), pathWithoutExtension);
-                    String result = onlyResultsMap.get(pathWithoutExtension);
-                    log.info("Found result: {}", result);
-                    if (result != null && !result.isEmpty()) { // Just to be safe
-                        String resultFilenameCore = FilenameHelper.stripExtension(result);
-                        if (resultFilenameCore == null || resultFilenameCore.isEmpty()) {
-                            System.err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
-                            continue;
-                        }
-                        String extension = FilenameHelper.getExtension(entry.getKey());
-                        String newfilename = resultFilenameCore + "." + extension;
-                        allFilesMap.put(entry.getKey(), newfilename);
-                        log.info("Corresponding filename: {} {}", entry.getKey(), newfilename);
-                    } else {
-                        System.err.println(String.format("No matching filename for file: %s. Skipping.", entry.getKey()));
-                    }
+                    String extension = FilenameHelper.getExtension(entry.getKey());
+                    String newfilename = resultFilenameCore + "." + extension;
+                    allFilesByPath.put(entry.getKey(), newfilename);
+                    log.info("Corresponding filename: {} {}", entry.getKey(), newfilename);
+                } else {
+                    err.println(String.format("No matching filename for file: %s. Skipping.", entry.getKey()));
                 }
             }
-
-            // Generate the command targetFile
-            backupIfExist(commandFile);
-            writeResult(commandFile, allFilesMap);
         }
+
+        // Generate the command targetFile
+        backupIfExist(commandFile);
+        writeResult(commandFile, allFilesByPath, out);
     }
 
     public static List<String> scan(File file) throws MediaProcessorException {
@@ -217,11 +254,11 @@ public class MediaFilename {
         return offset;
     }
 
-    private static void writeResult(Path commandFile, Map<String, String> allFiles) throws IOException {
+    private static void writeResult(Path commandFile, Map<String, String> allFiles, OutputAppender out) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(commandFile, StandardOpenOption.CREATE_NEW)) {
             for (Map.Entry<String, String> result : allFiles.entrySet()) {
                 String command = String.format("mv \'%s\' \'%s\'", result.getKey(), result.getValue());
-                System.out.println(command);
+                out.println(command);
                 writer.write(command);
                 writer.write("\n");
             }
@@ -246,6 +283,28 @@ public class MediaFilename {
         System.err.println(usage);
         if (additionalInfo != null) {
             System.err.println(additionalInfo);
+        }
+    }
+
+    /**
+     * Simple appender abstraction to allow us to log on different kind of output, like standard output and error when running
+     * as a utility command, or like text areas when running in GUI.
+     */
+    public interface OutputAppender {
+        void println(String line);
+    }
+
+    static class PrintStreamAppender implements OutputAppender {
+
+        private PrintStream ps;
+
+        public PrintStreamAppender(PrintStream ps) {
+            Objects.requireNonNull(ps, "PrintStream required!");
+            this.ps = ps;
+        }
+        @Override
+        public void println(String line) {
+            ps.println(line);
         }
     }
 }

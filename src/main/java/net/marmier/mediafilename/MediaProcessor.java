@@ -18,7 +18,7 @@ public interface MediaProcessor {
     String generateFilename(File mediaFile) throws MediaProcessorException;
 
     interface Result {
-        public String getBefore();
-        public String getAfter();
+        public String getOldRelativeName();
+        public String getNewRelativeName();
     }
 }
