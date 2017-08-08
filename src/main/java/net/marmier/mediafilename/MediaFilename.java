@@ -3,6 +3,7 @@ package net.marmier.mediafilename;
 import net.marmier.mediafilename.filename.FilenameHelper;
 import net.marmier.mediafilename.timezone.Offset;
 import net.marmier.mediafilename.ui.PhotoFilenameConverterFrame;
+import net.marmier.mediafilename.util.finder.Finder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,8 +12,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -114,8 +116,9 @@ public class MediaFilename {
         Map<String, String> resultsByPath = new TreeMap<>();
 
         // Initialize the all files map with entries without result.
-        for (String originalPath : scan(targetFile)) {
-            allFilesByPath.put(originalPath, null);
+        final Finder finder = new Finder(new File(workingDirectory));
+        for (Path originalPath : finder.find(targetFile, false, false)) {
+            allFilesByPath.put(originalPath.toString(), null);
         }
 
         // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
@@ -173,60 +176,6 @@ public class MediaFilename {
         writeResult(commandFile, allFilesByPath, out);
     }
 
-    public static List<String> scan(File file) throws MediaProcessorException {
-        if (file.isDirectory()) {
-            return scanDirectory(file.toPath());
-        } else {
-            String result = scanFile(file.toPath());
-            if (result != null) {
-                return Collections.singletonList(result);
-            }
-            else {
-                return Collections.emptyList();
-            }
-        }
-    }
-
-    public static List<String> scanDirectory(Path targetDirectory) throws MediaProcessorException {
-        final List<String> results = new ArrayList<>();
-        try {
-            Files.walkFileTree(targetDirectory, new FileVisitor<Path>() {
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String result = scanFile(file);
-                    if (result != null) {
-                        results.add(result);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    exc.printStackTrace();
-                    return FileVisitResult.CONTINUE;
-                }
-
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            throw new MediaProcessorException("An error occured while processing directory " + targetDirectory.toString(), e);
-        }
-        return results;
-    }
-
-    public static String scanFile(Path originalFile) throws MediaProcessorException {
-        log.info("Collecting {}", originalFile.getFileName());
-
-        return createOldRelativePath(originalFile);
-    }
-
-    private static String createOldRelativePath(Path originalFile) {
-        return workingDirectory.relativize(originalFile.toAbsolutePath()).toString();
-    }
 
     /**
      * We pick the parent directory of the targeted file or directory as the working directory. Should that be
