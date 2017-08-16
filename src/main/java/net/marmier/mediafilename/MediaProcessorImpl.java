@@ -10,15 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Added by raphael on 14.09.16.
@@ -38,61 +33,22 @@ public class MediaProcessorImpl implements MediaProcessor {
         this.workingDirectory = new File(workingDirectory).toPath();
     }
 
-    public List<Result> process(File file) throws MediaProcessorException {
-        if (file.isDirectory()) {
-                return processDirectory(file.toPath());
-        } else {
-            Result result = processFile(file.toPath());
-            if (result != null) {
-                return Collections.singletonList(result);
-            }
-            else {
-                return Collections.emptyList();
-            }
-        }
+    @Override
+    public List<Result> process(List<Path> file) throws MediaProcessorException {
+        return file.stream()
+            .map(this::processFile)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 
-    public List<Result> processDirectory(Path targetDirectory) throws MediaProcessorException {
-        final List<Result> results = new ArrayList<>();
-        try {
-            Files.walkFileTree(targetDirectory, new FileVisitor<Path>() {
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
+    public Result processFile(Path file) throws MediaProcessorException {
+        log.info("Processing {}", file.getFileName());
 
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Result result = processFile(file);
-                    if (result != null) {
-                        results.add(result);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
+        String oldRelativeName = createOldRelativePath(file);
 
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    exc.printStackTrace();
-                    return FileVisitResult.CONTINUE;
-                }
-
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            throw new MediaProcessorException("An error occured while processing directory " + targetDirectory.toString(), e);
-        }
-        return results;
-    }
-
-    public Result processFile(Path originalFile) throws MediaProcessorException {
-        log.info("Processing {}", originalFile.getFileName());
-
-        String oldRelativeName = createOldRelativePath(originalFile);
-
-        String newName = generateFilename(originalFile.toFile());
+        String newName = generateFilename(file.toFile());
         if (newName != null) {
-
-            String newRelativeName = createNewRelativePath(originalFile, newName);
-
+            String newRelativeName = createNewRelativePath(file, newName);
             return new ResultImpl(oldRelativeName, newRelativeName);
         }
         log.error("File could not be processed: ignored ({})", oldRelativeName);

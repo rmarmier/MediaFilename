@@ -18,6 +18,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Generate new filenames for media files, so files from different sources can be archived together
@@ -129,8 +130,13 @@ public class MediaFilename {
               */
         log.info("First pass: processing known extensions");
 
+        List<Path> allFiles = allFilesByPath.keySet().stream()
+            .map(File::new)
+            .map(File::toPath)
+            .collect(Collectors.toList());
+
         // Process the media files and get the results
-        final List<MediaProcessor.Result> results = mediaProcessor.process(targetFile);
+        final List<MediaProcessor.Result> results = mediaProcessor.process(allFiles);
         // Add just the result to the result map
         for (MediaProcessor.Result result : results) {
             log.info("Caching result {} {}", result.getOldRelativeName(), result.getNewRelativeName());

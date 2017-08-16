@@ -9,16 +9,14 @@ import java.util.List;
  */
 public interface MediaProcessor {
 
-    List<Result> process(File file) throws MediaProcessorException;
-
-    List<Result> processDirectory(Path targetDirectory) throws MediaProcessorException;
+    List<Result> process(List<Path> file) throws MediaProcessorException;
 
     Result processFile(Path originalFile) throws MediaProcessorException;
 
     String generateFilename(File mediaFile) throws MediaProcessorException;
 
     interface Result {
-        public String getOldRelativeName();
-        public String getNewRelativeName();
+        String getOldRelativeName();
+        String getNewRelativeName();
     }
 }
