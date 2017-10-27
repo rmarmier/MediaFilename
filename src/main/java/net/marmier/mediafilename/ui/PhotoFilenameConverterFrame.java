@@ -4,6 +4,7 @@ import net.marmier.mediafilename.MediaFilename;
 import net.marmier.mediafilename.timezone.Offset;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
@@ -89,122 +90,89 @@ public class PhotoFilenameConverterFrame extends javax.swing.JFrame {
             }
         });
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(filenameLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(filenameField, javax.swing.GroupLayout.PREFERRED_SIZE, 548, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(pickerLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(pickerButton))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(timezoneLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(timezoneDropdown))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(convertLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(convertButton)))
-                    .addContainerGap(27, Short.MAX_VALUE))
-                .addGroup(layout.createSequentialGroup()
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(consoleLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(consoleArea, javax.swing.GroupLayout.PREFERRED_SIZE, 548, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(resultLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(resultArea, javax.swing.GroupLayout.PREFERRED_SIZE, 548,
-                                javax.swing.GroupLayout.PREFERRED_SIZE))))
-        );
-
-        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, pickerButton, filenameField);
-
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(filenameField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(filenameLabel))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(pickerButton)
-                        .addComponent(pickerLabel))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(timezoneDropdown)
-                        .addComponent(timezoneLabel))
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(convertButton)
-                        .addComponent(convertLabel))
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(consoleArea, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(consoleLabel))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(resultArea, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(resultLabel))
-                    .addContainerGap(21, Short.MAX_VALUE))
-        );
+        doLayout(this);
         pack();
+    }
+
+    public void doLayout(PhotoFilenameConverterFrame frame) {
+
+        Container contentPane = frame.getContentPane();
+        contentPane.setLayout(new SpringLayout());
+
+        JPanel commandPane = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        commandPane.add(frame.getPickerButton());
+        commandPane.add(frame.getTimezoneDropdown());
+        commandPane.add(frame.getConvertButton());
+        commandPane.setMinimumSize(new Dimension(600, frame.getTimezoneDropdown().getHeight()));
+        contentPane.add(commandPane);
+
+        contentPane.add(frame.getFilenameLabel());
+        contentPane.add(frame.getFilenameField());
+
+        contentPane.add(frame.getConsoleLabel());
+        contentPane.add(frame.getConsoleArea());
+
+        contentPane.add(frame.getResultLabel());
+        contentPane.add(frame.getResultArea());
+
+        SpringUtilities.makeCompactGrid(contentPane, 7, 1, 6, 6, 6, 6);
     }
 
     private boolean checkMissingParams(MediaFilename.OutputAppender appender, String filename, String selectedTimezone) {
         boolean hasMissingParams = false;
         if (filename == null || filename.isEmpty()) {
-            appender.println("Please choose the file or directory to operate on.");
+            appender.println("Select the file or directory");
             hasMissingParams = true;
         }
-        if (selectedTimezone == null || selectedTimezone.isEmpty()) {
-            appender.println("Please choose the timezone offset to be used.");
+        if (selectedTimezone == null || selectedTimezone.isEmpty() || !selectedTimezoneIsValid(selectedTimezone)) {
+            appender.println("Please choose the timezone offset to be used");
             hasMissingParams = true;
         }
         return hasMissingParams;
     }
 
+    private boolean selectedTimezoneIsValid(String selectedTimezone) {
+        try {
+            Offset.forCode(selectedTimezone);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+        return true;
+    }
+
     private void initTimezone() {
         timezoneLabel = new JLabel();
-        timezoneLabel.setText("Select Timezone");
+        timezoneLabel.setText("Select timezone offset");
         timezoneDropdown = new java.awt.Choice();
-        timezoneDropdown.add("");
-        Arrays.stream(Offset.values()).forEach(o -> timezoneDropdown.addItem(o.getCode()));
+        timezoneDropdown.add("Select timezone offset");
+        Arrays.stream(Offset.values()).forEach(o -> timezoneDropdown.add(o.getCode()));
     }
 
     private void initConvertButton() {
         convertLabel = new JLabel();
         convertLabel.setText("Generate renames");
         convertButton = new JButton();
-        convertButton.setText("Convert");
+        convertButton.setText("Generate new filenames");
     }
 
     private void initResultArea() {
         resultLabel = new JLabel();
-        resultLabel.setText("Results");
+        resultLabel.setText("Results:");
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setLineWrap(true);
         resultArea.setAutoscrolls(true);
+        resultArea.setPreferredSize(new Dimension(600, 300));
     }
 
     private void initConsoleArea() {
         consoleLabel = new JLabel();
-        consoleLabel.setText("Error console");
+        consoleLabel.setText("Errors:");
         consoleArea = new JTextArea();
         consoleArea.setEditable(false);
         consoleArea.setLineWrap(true);
         consoleArea.setAutoscrolls(true);
+        consoleArea.setPreferredSize(new Dimension(600, 300));
     }
 
     private void initFilePicker() {
@@ -218,7 +186,7 @@ public class PhotoFilenameConverterFrame extends javax.swing.JFrame {
 
     private void initFilenameField() {
         filenameLabel = new JLabel();
-        filenameLabel.setText("Selected file / directory");
+        filenameLabel.setText("Selected file / directory:");
         filenameField = new JTextField();
         filenameField.setSize(1000, filenameField.getHeight());
         filenameField.setEditable(false);
@@ -238,4 +206,59 @@ public class PhotoFilenameConverterFrame extends javax.swing.JFrame {
         }
     }
 
+    public JLabel getFilenameLabel() {
+        return filenameLabel;
+    }
+
+    public JTextField getFilenameField() {
+        return filenameField;
+    }
+
+    public JButton getPickerButton() {
+        return pickerButton;
+    }
+
+    public JLabel getPickerLabel() {
+        return pickerLabel;
+    }
+
+    public JFileChooser getFilePicker() {
+        return filePicker;
+    }
+
+    public Choice getTimezoneDropdown() {
+        return timezoneDropdown;
+    }
+
+    public JLabel getTimezoneLabel() {
+        return timezoneLabel;
+    }
+
+    public JButton getConvertButton() {
+        return convertButton;
+    }
+
+    public JLabel getConvertLabel() {
+        return convertLabel;
+    }
+
+    public JLabel getConsoleLabel() {
+        return consoleLabel;
+    }
+
+    public JTextArea getConsoleArea() {
+        return consoleArea;
+    }
+
+    public JLabel getResultLabel() {
+        return resultLabel;
+    }
+
+    public JTextArea getResultArea() {
+        return resultArea;
+    }
+
+    public File getSelectedFile() {
+        return selectedFile;
+    }
 }
