@@ -31,16 +31,16 @@ public class FinderTest {
             List<Path> results = finder.find(testResourceDir, false, false);
             Assert.assertNotNull(results);
             Assert.assertEquals(10, results.size());
-            Assert.assertEquals("finder/directory01/directory03/testfile06.txt", results.get(0).toString());
-            Assert.assertEquals("finder/directory01/directory03/testfile07.txt", results.get(1).toString());
-            Assert.assertEquals("finder/directory01/testfile01.txt", results.get(2).toString());
-            Assert.assertEquals("finder/directory01/testfile02.txt", results.get(3).toString());
-            Assert.assertEquals("finder/directory01/testfile03.txt", results.get(4).toString());
-            Assert.assertEquals("finder/directory01/testfile04.txt", results.get(5).toString());
-            Assert.assertEquals("finder/directory01/testfile05.txt", results.get(6).toString());
-            Assert.assertEquals("finder/directory02/testfile08.txt", results.get(7).toString());
-            Assert.assertEquals("finder/directory02/testfile09.txt", results.get(8).toString());
-            Assert.assertEquals("finder/testfile10.txt", results.get(9).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/directory03/testfile06.txt", results.get(0).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/directory03/testfile07.txt", results.get(1).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/testfile01.txt", results.get(2).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/testfile02.txt", results.get(3).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/testfile03.txt", results.get(4).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/testfile04.txt", results.get(5).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory01/testfile05.txt", results.get(6).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory02/testfile08.txt", results.get(7).toString());
+            Assert.assertEquals("src/test/resources/util/finder/directory02/testfile09.txt", results.get(8).toString());
+            Assert.assertEquals("src/test/resources/util/finder/testfile10.txt", results.get(9).toString());
 
         }
     }

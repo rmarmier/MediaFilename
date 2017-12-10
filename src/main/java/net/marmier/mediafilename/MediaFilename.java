@@ -18,7 +18,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Generate new filenames for media files, so files from different sources can be archived together
@@ -52,7 +51,7 @@ public class MediaFilename {
             System.exit(1);
         } else {
             // Decode the timezone offset
-            offset = decodeCode(firstArgument);
+            offset = matchCode(firstArgument);
 
             // Get the fileArgumentName parameter
             String argument1 = args[1];
@@ -93,34 +92,34 @@ public class MediaFilename {
         Path commandFile;
 
         // Assemble the output files basename
-        String filenameBase = String.format(
+        String outputFilenameBase = String.format(
             "Importation_%s_%s_tz%s",
             launchTime.format(DateTimeFormatter.ISO_LOCAL_DATE),
             targetFile.getName(), offset.toString()
         );
-        err.println("filenameBase: " + filenameBase);
+        err.println("filenameBase: " + outputFilenameBase);
 
         // Prepare the command targetFile name
-        commandFile = new File(workingDirectory + "/" + filenameBase + ".sh").toPath();
+        commandFile = new File(workingDirectory + "/" + outputFilenameBase + ".sh").toPath();
 
         // Initialize the log fileArgumentName dynamically. This work provided we use non-static loggers.
-        System.setProperty("logfilename", workingDirectory + "/" + filenameBase);
+        System.setProperty("logfilename", workingDirectory + "/" + outputFilenameBase);
 
         // Initialize the error log fileArgumentName dynamically. This work provided we use non-static loggers.
-        System.setProperty("errorsfilename", workingDirectory + "/" + filenameBase + "_errors");
+        System.setProperty("errorsfilename", workingDirectory + "/" + outputFilenameBase + "_errors");
 
         MediaFilename.workingDirectory = new File(workingDirectory).toPath();
 
-        // Map to contain all entries, with the full original path as the key. Order must be preserved.
-        Map<String, String> allFilesByPath = new LinkedHashMap<>();
-        // Map to contain result entries, with the original path stripped of extension as the key.
-        Map<String, String> resultsByPath = new TreeMap<>();
+        // Map to contain all entries, with the full original path as the key associated with the resulting filename.
+        // Order must be preserved.
+        Map<String, String> resultsByPath = new LinkedHashMap<>();
+        // Map to contain results of the first pass by original filename without extension, so we can correlate
+        // with secondary files and use the same new filename.
+        Map<String, String> resultsByUniqueNames = new TreeMap<>();
 
         // Initialize the all files map with entries without result.
         final Finder finder = new Finder(new File(workingDirectory));
-        for (Path originalPath : finder.find(targetFile, false, false)) {
-            allFilesByPath.put(originalPath.toString(), null);
-        }
+        List<Path> allFiles = finder.find(targetFile, false, false);
 
         // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
         MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
@@ -130,56 +129,49 @@ public class MediaFilename {
               */
         log.info("First pass: processing known extensions");
 
-        List<Path> allFiles = allFilesByPath.keySet().stream()
-            .map(File::new)
-            .map(File::toPath)
-            .collect(Collectors.toList());
-
         // Process the media files and get the results
         final List<MediaProcessor.Result> results = mediaProcessor.process(allFiles);
         // Add just the result to the result map
         for (MediaProcessor.Result result : results) {
-            log.info("Caching result {} {}", result.getOldRelativeName(), result.getNewRelativeName());
-            allFilesByPath.put(result.getOldRelativeName(), result.getNewRelativeName());
+            log.debug("Caching result {} {}", result.getOriginalPath(), result.getNewFilename());
+            resultsByPath.put(result.getOriginalPath().toString(), result.getNewFilename());
 
-            resultsByPath.put(FilenameHelper.stripExtension(result.getOldRelativeName()), result.getNewRelativeName());
+            resultsByUniqueNames.put(FilenameHelper.stripExtension(result.getOriginalPath().toFile().getName()), result.getNewFilename());
         }
 
-            /*
-                Second pass to match companion files to their master and use its new filename.
-             */
+        /*
+            Second pass to match companion files to their master and use its new filename.
+         */
         log.info("Second pass: matching companion files");
 
-        for (Map.Entry<String, String> entry : allFilesByPath.entrySet()) {
-            if (entry.getValue() == null) { // Select entries missing a result
-                String filepath = entry.getKey();
-                String pathWithoutExtension = FilenameHelper.stripExtension(filepath);
-                if (pathWithoutExtension == null || pathWithoutExtension.isEmpty()) {
-                    err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
+        for (Path filepath : allFiles) {
+            if (!resultsByPath.containsKey(filepath.toString())) { // We proceed if the given file doesn't have a result yet.
+                String nameWithoutExtension = FilenameHelper.stripExtension(filepath.toFile().getName());
+                if (nameWithoutExtension == null || nameWithoutExtension.isEmpty()) {
+                    err.println(String.format("Skipping file for which we could not determine base filename: %s", filepath.toString()));
                     continue;
                 }
-                log.info("File: {} {}", entry.getKey(), pathWithoutExtension);
-                String result = resultsByPath.get(pathWithoutExtension);
-                log.info("Found result: {}", result);
-                if (result != null && !result.isEmpty()) { // Just to be safe
-                    String resultFilenameCore = FilenameHelper.stripExtension(result);
-                    if (resultFilenameCore == null || resultFilenameCore.isEmpty()) {
-                        err.println(String.format("Could not determine base filename of path: %s. Skipping.", entry.getKey()));
+                String result = resultsByUniqueNames.get(nameWithoutExtension);
+                if (result != null && !result.isEmpty()) {
+                    log.info("Found result matching [{}] to [{}]", nameWithoutExtension, result);
+                    String resultNameWithoutExtension = FilenameHelper.stripExtension(result);
+                    if (resultNameWithoutExtension == null || resultNameWithoutExtension.isEmpty()) {
+                        err.println(String.format("Skipping file for which we could not determine extension: %s.", filepath.toString()));
                         continue;
                     }
-                    String extension = FilenameHelper.getExtension(entry.getKey());
-                    String newfilename = resultFilenameCore + "." + extension;
-                    allFilesByPath.put(entry.getKey(), newfilename);
-                    log.info("Corresponding filename: {} {}", entry.getKey(), newfilename);
+                    String extension = FilenameHelper.getExtension(filepath.toString());
+                    String newfilename = resultNameWithoutExtension + "." + extension;
+                    resultsByPath.put(filepath.toString(), newfilename);
+                    log.info("Generated filename: {} {}", filepath.toString(), newfilename);
                 } else {
-                    err.println(String.format("No matching filename for file: %s. Skipping.", entry.getKey()));
+                    err.println(String.format("No result matching %s for %s", nameWithoutExtension, filepath.toString()));
                 }
             }
         }
 
         // Generate the command targetFile
-        backupIfExist(commandFile);
-        writeResult(commandFile, allFilesByPath, out);
+        backupPreviousRunIfExist(commandFile);
+        writeResult(commandFile, resultsByPath, out);
     }
 
 
@@ -198,12 +190,12 @@ public class MediaFilename {
         return workingDirectory;
     }
 
-    private static Offset decodeCode(String code) {
+    private static Offset matchCode(String literalCode) {
         Offset offset = null;
         try {
-            offset = Offset.forCode(code);
+            offset = Offset.forCode(literalCode);
         } catch (IllegalArgumentException e) {
-            showUsage("Invalid timezone code provided: " + code);
+            showUsage("Invalid timezone code provided: " + literalCode);
             System.exit(1);
         }
         return offset;
@@ -223,7 +215,7 @@ public class MediaFilename {
         }
     }
 
-    private static void backupIfExist(Path commandFile) throws IOException {
+    private static void backupPreviousRunIfExist(Path commandFile) throws IOException {
         if (Files.exists(commandFile)) {
             Files.move(commandFile, createBackupFilename(commandFile));
         }

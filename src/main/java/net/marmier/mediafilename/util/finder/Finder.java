@@ -82,6 +82,7 @@ public class Finder {
     }
 
     private Path processFile(Path file) {
+/*
         Path absolutePath = file.toAbsolutePath();
         log.debug("Computing relative path for file: {}", absolutePath);
 
@@ -90,5 +91,7 @@ public class Finder {
         } else {
             return file.getFileName();
         }
+*/
+        return file;
     }
 }

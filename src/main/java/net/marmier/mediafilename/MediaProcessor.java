@@ -16,7 +16,7 @@ public interface MediaProcessor {
     String generateFilename(File mediaFile) throws MediaProcessorException;
 
     interface Result {
-        String getOldRelativeName();
-        String getNewRelativeName();
+        Path getOriginalPath();
+        String getNewFilename();
     }
 }

@@ -44,42 +44,40 @@ public class MediaProcessorImpl implements MediaProcessor {
     public Result processFile(Path file) throws MediaProcessorException {
         log.info("Processing {}", file.getFileName());
 
-        String oldRelativeName = createOldRelativePath(file);
-
         String newName = generateFilename(file.toFile());
         if (newName != null) {
             String newRelativeName = createNewRelativePath(file, newName);
-            return new ResultImpl(oldRelativeName, newRelativeName);
+            return new ResultImpl(file, newRelativeName);
         }
-        log.error("File could not be processed: ignored ({})", oldRelativeName);
+        log.error("File could not be processed: ignored ({})", file.toString());
         return null;
     }
 
     private String createNewRelativePath(Path originalFile, String newName) {
         Path parentDir = originalFile.getParent();
-        String newRelativeParent = workingDirectory.relativize(parentDir.toAbsolutePath()).toString();
+        String newRelativeParent = workingDirectory.relativize(parentDir).toString();
         return String.format("%s%s", newRelativeParent + "/", newName);
     }
 
     private String createOldRelativePath(Path originalFile) {
-        return workingDirectory.relativize(originalFile.toAbsolutePath()).toString();
+        return workingDirectory.relativize(originalFile).toString();
     }
 
     static class ResultImpl implements Result {
-        private final String oldRelativeName;
-        private final String newRelativeName;
+        private final Path originalPath;
+        private final String newFilename;
 
-        ResultImpl(String oldRelativeName, String newRelativeName) {
-            this.oldRelativeName = oldRelativeName;
-            this.newRelativeName = newRelativeName;
+        ResultImpl(Path originalPath, String newFilename) {
+            this.originalPath = originalPath;
+            this.newFilename = newFilename;
         }
 
-        public String getOldRelativeName() {
-            return oldRelativeName;
+        public Path getOriginalPath() {
+            return originalPath;
         }
 
-        public String getNewRelativeName() {
-            return newRelativeName;
+        public String getNewFilename() {
+            return newFilename;
         }
     }
 
