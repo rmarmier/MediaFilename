@@ -27,8 +27,8 @@ public class FinderTest {
     public void find() throws Exception {
         //
         {
-            Finder finder = new Finder(new File("src/test/resources/util"));
-            List<Path> results = finder.find(testResourceDir, false, false);
+            Finder finder = new Finder();
+            List<Path> results = finder.find(testResourceDir.toPath(), false, false);
             Assert.assertNotNull(results);
             Assert.assertEquals(10, results.size());
             Assert.assertEquals("src/test/resources/util/finder/directory01/directory03/testfile06.txt", results.get(0).toString());

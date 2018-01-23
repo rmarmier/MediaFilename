@@ -118,8 +118,8 @@ public class MediaFilename {
         Map<String, String> resultsByUniqueNames = new TreeMap<>();
 
         // Initialize the all files map with entries without result.
-        final Finder finder = new Finder(new File(workingDirectory));
-        List<Path> allFiles = finder.find(targetFile, false, false);
+        final Finder finder = new Finder();
+        List<Path> allFiles = finder.find(targetFile.toPath(), false, false);
 
         // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
         MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
