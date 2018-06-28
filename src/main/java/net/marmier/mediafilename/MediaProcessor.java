@@ -18,5 +18,6 @@ public interface MediaProcessor {
     interface Result {
         Path getOriginalPath();
         String getNewFilename();
+        String getNewFilenameRoot();
     }
 }

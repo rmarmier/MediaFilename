@@ -1,6 +1,7 @@
 package net.marmier.mediafilename;
 
 import net.marmier.mediafilename.filename.FilenameHelper;
+import net.marmier.mediafilename.index.IndexedResultsHolder;
 import net.marmier.mediafilename.timezone.Offset;
 import net.marmier.mediafilename.ui.PhotoFilenameConverterFrame;
 import net.marmier.mediafilename.util.finder.Finder;
@@ -17,7 +18,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Generate new filenames for media files, so files from different sources can be archived together
@@ -39,7 +41,7 @@ public class MediaFilename {
         File targetFile;
 
         if (args.length < 1) {
-            showUsage(null);
+            showUsage(timeZoneMessage());
             System.exit(1);
         }
         String firstArgument = args[0];
@@ -47,7 +49,7 @@ public class MediaFilename {
             startUi();
         }
         else if (args.length < 2) {
-            showUsage(null);
+            showUsage(timeZoneMessage());
             System.exit(1);
         } else {
             // Decode the timezone offset
@@ -83,8 +85,26 @@ public class MediaFilename {
     public static void realStart(Offset offset, File targetFile, OutputAppender err, OutputAppender out) throws IOException {
         LocalDateTime launchTime = LocalDateTime.now();
 
-        // Determine the working directory. We fall back on the system property if that fails.
-        String workingDirectory = getWorkingDirectory(targetFile);
+        /*
+            Determine the working directory effective for the job. The working directory will hold the resulting
+            script and error files, named after the directory or the file processed. The resulting script can then
+            easily be run inside a shell from within the working directory.
+
+            Either the path provided is a full path, and we will use its immediate parent as working directory,
+            either the path is relative and we will use the path provided by system property "user.dir"
+            as working directory, expecting the provided path to be found immediately under it.
+         */
+        String workingDirectory;
+        if (targetFile.isAbsolute()) {
+            workingDirectory = targetFile.getParent();
+            Objects.requireNonNull(workingDirectory); // Protect against a bad inconsistency. Should not happen.
+        }
+        else {
+            workingDirectory = System.getProperty("user.dir");
+            Objects.requireNonNull(workingDirectory,
+                "System property user.dir is empty. Cannot determine an acceptable workingdirectory.");
+            System.err.println("Using system 'user.dir' as working dir.");
+        }
 
         err.println("targetFile: " + targetFile);
         err.println("workingDirectory: " + workingDirectory);
@@ -110,84 +130,72 @@ public class MediaFilename {
 
         MediaFilename.workingDirectory = new File(workingDirectory).toPath();
 
-        // Map to contain all entries, with the full original path as the key associated with the resulting filename.
-        // Order must be preserved.
-        Map<String, String> resultsByPath = new LinkedHashMap<>();
-        // Map to contain results of the first pass by original filename without extension, so we can correlate
-        // with secondary files and use the same new filename.
-        Map<String, String> resultsByUniqueNames = new TreeMap<>();
+        // Working with the full path from now on.
+        Path fullTargetPath;
+        if (!targetFile.isAbsolute()) {
+            fullTargetPath = new File(workingDirectory).toPath().resolve(targetFile.toPath());
+        } else {
+            fullTargetPath = targetFile.toPath();
+        }
 
         // Initialize the all files map with entries without result.
         final Finder finder = new Finder();
-        List<Path> allFiles = finder.find(targetFile.toPath(), false, false);
+        List<Path> allFiles = finder.find(fullTargetPath, false, false);
 
         // Initialize the service (last, so we can configure the log targetFile dynamically, just above)
         MediaProcessor mediaProcessor = new MediaProcessorImpl(offset, workingDirectory);
 
-            /*
-                First pass to process supported files
-              */
+        /*
+            First pass to process supported files
+          */
         log.info("First pass: processing known extensions");
 
         // Process the media files and get the results
-        final List<MediaProcessor.Result> results = mediaProcessor.process(allFiles);
-        // Add just the result to the result map
-        for (MediaProcessor.Result result : results) {
-            log.debug("Caching result {} {}", result.getOriginalPath(), result.getNewFilename());
-            resultsByPath.put(result.getOriginalPath().toString(), result.getNewFilename());
+        List<MediaProcessor.Result> resultList = mediaProcessor.process(allFiles);
 
-            resultsByUniqueNames.put(FilenameHelper.stripExtension(result.getOriginalPath().toFile().getName()), result.getNewFilename());
-        }
+        // Index the results
+        final IndexedResultsHolder indexedResults = new IndexedResultsHolder(resultList);
 
         /*
-            Second pass to match companion files to their master and use its new filename.
+            Second pass to match companion files to their master and use their new filename.
          */
         log.info("Second pass: matching companion files");
 
         for (Path filepath : allFiles) {
-            if (!resultsByPath.containsKey(filepath.toString())) { // We proceed if the given file doesn't have a result yet.
-                String nameWithoutExtension = FilenameHelper.stripExtension(filepath.toFile().getName());
-                if (nameWithoutExtension == null || nameWithoutExtension.isEmpty()) {
-                    err.println(String.format("Skipping file for which we could not determine base filename: %s", filepath.toString()));
-                    continue;
-                }
-                String result = resultsByUniqueNames.get(nameWithoutExtension);
-                if (result != null && !result.isEmpty()) {
-                    log.info("Found result matching [{}] to [{}]", nameWithoutExtension, result);
-                    String resultNameWithoutExtension = FilenameHelper.stripExtension(result);
-                    if (resultNameWithoutExtension == null || resultNameWithoutExtension.isEmpty()) {
-                        err.println(String.format("Skipping file for which we could not determine extension: %s.", filepath.toString()));
-                        continue;
-                    }
-                    String extension = FilenameHelper.getExtension(filepath.toString());
-                    String newfilename = resultNameWithoutExtension + "." + extension;
-                    resultsByPath.put(filepath.toString(), newfilename);
-                    log.info("Generated filename: {} {}", filepath.toString(), newfilename);
-                } else {
-                    err.println(String.format("No result matching %s for %s", nameWithoutExtension, filepath.toString()));
+            if (indexedResults.getResultMatchingPath(filepath) == null) { // We proceed if the given file doesn't have a result yet.
+                final MediaProcessor.Result result = matchToExistingResult(err, indexedResults, filepath);
+                if (result != null) {
+                    final String newFilename = result.getNewFilenameRoot() + "." + FilenameHelper.getExtension(filepath.toString());
+                    indexedResults.addResult(new MediaProcessorImpl.ResultImpl(filepath, newFilename));
+                    log.info("Generated filename: {} {}", filepath.toString(), newFilename);
                 }
             }
         }
 
         // Generate the command targetFile
         backupPreviousRunIfExist(commandFile);
-        writeResult(commandFile, resultsByPath, out);
+        writeResult(commandFile, indexedResults.getResults(), out);
     }
 
-
-    /**
-     * We pick the parent directory of the targeted file or directory as the working directory. Should that be
-     * impossible (because the path given is relative), we get the user.dir property from the system.
-     * @param targetFile the file or directory targeted by the program
-     * @return the string representing the working directory
-     */
-    private static String getWorkingDirectory(File targetFile) {
-        String workingDirectory = targetFile.getParent();
-        if (workingDirectory == null) {
-            workingDirectory = System.getProperty("user.dir");
-            System.err.println("Using user.dir as working dir.");
+    private static MediaProcessor.Result matchToExistingResult(OutputAppender err, IndexedResultsHolder results, Path filepath) {
+        String filenameRoot = filenameRoot(filepath.toFile().getName());
+        if (filenameRoot == null || filenameRoot.isEmpty()) {
+            err.println(String.format("Skipping file for which we could not determine base filename: %s", filepath.toString()));
+            return null;
         }
-        return workingDirectory;
+        MediaProcessor.Result resultMatchingRoot = results.getResultMatchingRoot(filepath);
+        if (resultMatchingRoot != null) {
+            log.info("Found result matching [{}] to [{}]", filenameRoot, resultMatchingRoot.getNewFilename());
+            return resultMatchingRoot;
+        }
+        else {
+            log.info("No result found matching [{}] for [{}]", filenameRoot, filepath.toString());
+            return null;
+        }
+    }
+
+    private static String filenameRoot(String filepath) {
+        return FilenameHelper.stripExtension(filepath);
     }
 
     private static Offset matchCode(String literalCode) {
@@ -195,16 +203,21 @@ public class MediaFilename {
         try {
             offset = Offset.forCode(literalCode);
         } catch (IllegalArgumentException e) {
-            showUsage("Invalid timezone code provided: " + literalCode);
+            String additionalInfo = "Invalid timezone code provided: " + literalCode + ".\n" + timeZoneMessage();
+            showUsage(additionalInfo);
             System.exit(1);
         }
         return offset;
     }
 
-    private static void writeResult(Path commandFile, Map<String, String> allFiles, OutputAppender out) throws IOException {
+    private static String timeZoneMessage() {
+        return "Time zone can be any of: " + Offset.dumpOffsetCodes() + "\n";
+    }
+
+    private static void writeResult(Path commandFile, List<MediaProcessor.Result> allResults, OutputAppender out) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(commandFile, StandardOpenOption.CREATE_NEW)) {
-            for (Map.Entry<String, String> result : allFiles.entrySet()) {
-                String command = String.format("mv \'%s\' \'%s\'", result.getKey(), result.getValue());
+            for (MediaProcessor.Result result : allResults) {
+                String command = String.format("mv \'%s\' \'%s\'", workingDirectory.relativize(result.getOriginalPath()), result.getNewFilename());
                 out.println(command);
                 writer.write(command);
                 writer.write("\n");
@@ -226,7 +239,8 @@ public class MediaFilename {
     }
 
     private static void showUsage(String additionalInfo) {
-        String usage = "Please provide a valid timezone (ex. +01:00) and the path to the directory containing the media to rename.";
+        String usage = "Please provide a valid timezone (ex. +01:00) and the path to the directory containing the media to rename, \n"
+            + "or use --run-with-ui to start the GUI.";
         System.err.println(usage);
         if (additionalInfo != null) {
             System.err.println(additionalInfo);

@@ -1,8 +1,10 @@
 package net.marmier.mediafilename.timezone;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static net.marmier.mediafilename.timezone.Offset.OffsetSign.NEGATIVE;
 import static net.marmier.mediafilename.timezone.Offset.OffsetSign.POSITIVE;
@@ -101,6 +103,11 @@ public enum Offset {
             getSign() == POSITIVE ? "+" : "-",
             getHourOffset(),
             getMinuteOffset());
+    }
+
+    public static String dumpOffsetCodes() {
+        return String
+            .join(" ", Arrays.stream(Offset.values()).map(Offset::getCode).collect(Collectors.toList()));
     }
 
     /**

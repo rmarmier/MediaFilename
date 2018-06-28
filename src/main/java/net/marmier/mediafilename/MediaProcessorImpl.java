@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static net.marmier.mediafilename.filename.FilenameHelper.stripExtension;
+
 /**
  * Added by raphael on 14.09.16.
  */
@@ -33,6 +35,13 @@ public class MediaProcessorImpl implements MediaProcessor {
         this.workingDirectory = new File(workingDirectory).toPath();
     }
 
+    /**
+     * Process a list of file as described in {@link MediaProcessor#processFile(Path)}.
+     *
+     * @param file The List of absolute paths of files to process.
+     * @return The list of result objects corresponding to the processed files
+     * @throws MediaProcessorException various cases of error
+     */
     @Override
     public List<Result> process(List<Path> file) throws MediaProcessorException {
         return file.stream()
@@ -41,7 +50,19 @@ public class MediaProcessorImpl implements MediaProcessor {
             .collect(Collectors.toList());
     }
 
+    /**
+     * Process a single file.
+     *
+     * @param file Absolute path of file to process
+     * @return a result object corresponding to the processed file
+     * @throws MediaProcessorException various cases of error
+     */
+    @Override
     public Result processFile(Path file) throws MediaProcessorException {
+        if (!file.isAbsolute()) {
+            throw new MediaProcessorException(String.format("Expecting file path to be absolute: %s", file.toString()));
+        }
+
         log.info("Processing {}", file.getFileName());
 
         String newName = generateFilename(file.toFile());
@@ -79,6 +100,10 @@ public class MediaProcessorImpl implements MediaProcessor {
         public String getNewFilename() {
             return newFilename;
         }
+
+        public String getNewFilenameRoot() {
+            return stripExtension(newFilename);
+        }
     }
 
     /**
@@ -86,6 +111,7 @@ public class MediaProcessorImpl implements MediaProcessor {
      * @param mediaFile The input mediaFile
      * @return The generated signature
      */
+    @Override
     public String generateFilename(File mediaFile) throws MediaProcessorException {
         MetaData meta;
         try {

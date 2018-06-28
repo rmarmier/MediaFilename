@@ -87,4 +87,13 @@ public class FilenameHelperTest {
         assertEquals("png", FilenameHelper.getExtension("mypath/mypa.th/myFile.png"));
         assertEquals("png", FilenameHelper.getExtension("/mypath/mypa.th/myFile.png"));
     }
+
+    @Test
+    public void testPathGetParent() {
+        Assert.assertEquals(new File("/dark").toPath(), new File("/dark/matter").toPath().getParent());
+        Assert.assertEquals(new File("/dark").toPath(), new File("/dark/matter/").toPath().getParent());
+        Assert.assertEquals(new File("/").toPath(), new File("/dark/").toPath().getParent());
+        Assert.assertEquals(new File("/").toPath(), new File("/dark").toPath().getParent());
+        assertNull(new File("/").toPath().getParent());
+    }
 }
