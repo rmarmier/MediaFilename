@@ -81,7 +81,7 @@ public class PhotoFilenameConverterFrame extends javax.swing.JFrame {
                     consoleAppender.println(directoryMessage);
                     String offsetMessage = String.format("Chosen offset is %s", offset.toString());
                     consoleAppender.println(offsetMessage);
-                    MediaFilename.realStart(offset, new File(filename), consoleAppender, resultAppender);
+                    MediaFilename.prepareStart(offset, new File(filename), consoleAppender, resultAppender);
                 } catch (IOException e) {
                     String message = String.format("An error occured during processing: %s", e.getMessage());
                     consoleAppender.println(message);
@@ -94,7 +94,7 @@ public class PhotoFilenameConverterFrame extends javax.swing.JFrame {
         pack();
     }
 
-    public void doLayout(PhotoFilenameConverterFrame frame) {
+    private void doLayout(PhotoFilenameConverterFrame frame) {
 
         Container contentPane = frame.getContentPane();
         contentPane.setLayout(new SpringLayout());
@@ -203,6 +203,11 @@ public class PhotoFilenameConverterFrame extends javax.swing.JFrame {
         public void println(String line) {
             ta.append(line);
             ta.append("\n");
+        }
+
+        @Override
+        public void flush() {
+            // no-op
         }
     }
 

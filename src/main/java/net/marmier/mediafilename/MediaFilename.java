@@ -32,9 +32,13 @@ import java.util.Objects;
  */
 public class MediaFilename {
 
-    private static Logger log = LoggerFactory.getLogger(MediaFilename.class);
+    private Logger log;
 
-    private static Path workingDirectory;
+    private Path workingDirectory;
+
+    public MediaFilename() {
+        this.log = LoggerFactory.getLogger(MediaFilename.class);
+    }
 
     public static void main(String args[]) throws IOException {
         Offset offset;
@@ -59,7 +63,7 @@ public class MediaFilename {
             String argument1 = args[1];
             targetFile = new File(argument1);
 
-            realStart(offset, targetFile, new PrintStreamAppender(System.err), new PrintStreamAppender(System.out));
+            prepareStart(offset, targetFile, null, null);
         }
     }
 
@@ -82,7 +86,7 @@ public class MediaFilename {
         frame.setVisible(true);
     }
 
-    public static void realStart(Offset offset, File targetFile, OutputAppender err, OutputAppender out) throws IOException {
+    public static void prepareStart(Offset offset, File targetFile, OutputAppender err, OutputAppender out) throws IOException {
         LocalDateTime launchTime = LocalDateTime.now();
 
         /*
@@ -98,18 +102,12 @@ public class MediaFilename {
         if (targetFile.isAbsolute()) {
             workingDirectory = targetFile.getParent();
             Objects.requireNonNull(workingDirectory); // Protect against a bad inconsistency. Should not happen.
-        }
-        else {
+        } else {
             workingDirectory = System.getProperty("user.dir");
             Objects.requireNonNull(workingDirectory,
                 "System property user.dir is empty. Cannot determine an acceptable workingdirectory.");
             System.err.println("Using system 'user.dir' as working dir.");
         }
-
-        err.println("targetFile: " + targetFile);
-        err.println("workingDirectory: " + workingDirectory);
-
-        Path commandFile;
 
         // Assemble the output files basename
         String outputFilenameBase = String.format(
@@ -117,23 +115,36 @@ public class MediaFilename {
             launchTime.format(DateTimeFormatter.ISO_LOCAL_DATE),
             targetFile.getName(), offset.toString()
         );
-        err.println("filenameBase: " + outputFilenameBase);
 
         // Prepare the command targetFile name
-        commandFile = new File(workingDirectory + "/" + outputFilenameBase + ".sh").toPath();
+        Path commandFile = new File(workingDirectory + "/" + outputFilenameBase + ".sh").toPath();
 
-        // Initialize the log fileArgumentName dynamically. This work provided we use non-static loggers.
-        System.setProperty("logfilename", workingDirectory + "/" + outputFilenameBase);
+        // Initialize the log filenamebase dynamically. (This work provided we use non-static loggers)
+        System.setProperty("filenamebase", workingDirectory + "/" + outputFilenameBase);
 
-        // Initialize the error log fileArgumentName dynamically. This work provided we use non-static loggers.
-        System.setProperty("errorsfilename", workingDirectory + "/" + outputFilenameBase + "_errors");
+        MediaFilename mainInstance = new MediaFilename();
 
-        MediaFilename.workingDirectory = new File(workingDirectory).toPath();
+        mainInstance.workingDirectory = new File(workingDirectory).toPath();
+
+
+//        err = err == null ? new LoggingPrintStreamAppender(System.err, false) : err;
+//        out = out == null ? new LoggingPrintStreamAppender(System.out, true) : out;
+        LoggingOutputAppender errOutputAppender = new LoggingOutputAppender(err == null ? new PrintStreamAppender(System.err) : err, false);
+        LoggingOutputAppender outOutputAppender = new LoggingOutputAppender(out == null ? new PrintStreamAppender(System.out) : out, true);
+
+        errOutputAppender.println("targetFile: " + targetFile);
+        errOutputAppender.println("workingDirectory: " + workingDirectory);
+        errOutputAppender.println("filenameBase: " + outputFilenameBase);
+
+        mainInstance.realStart(offset, targetFile, commandFile, errOutputAppender, outOutputAppender);
+    }
+
+    private void realStart(Offset offset, File targetFile, Path commandFile, OutputAppender err, OutputAppender out) throws IOException {
 
         // Working with the full path from now on.
         Path fullTargetPath;
         if (!targetFile.isAbsolute()) {
-            fullTargetPath = new File(workingDirectory).toPath().resolve(targetFile.toPath());
+            fullTargetPath = workingDirectory.resolve(targetFile.toPath());
         } else {
             fullTargetPath = targetFile.toPath();
         }
@@ -167,7 +178,7 @@ public class MediaFilename {
                 if (result != null) {
                     final String newFilename = result.getNewFilenameRoot() + "." + FilenameHelper.getExtension(filepath.toString());
                     indexedResults.addResult(new MediaProcessorImpl.ResultImpl(filepath, newFilename));
-                    log.info("Generated filename: {} {}", filepath.toString(), newFilename);
+                    log.debug("Generated filename: {} {}", filepath.toString(), newFilename);
                 }
             }
         }
@@ -177,7 +188,7 @@ public class MediaFilename {
         writeResult(commandFile, indexedResults.getResults(), out);
     }
 
-    private static MediaProcessor.Result matchToExistingResult(OutputAppender err, IndexedResultsHolder results, Path filepath) {
+    private MediaProcessor.Result matchToExistingResult(OutputAppender err, IndexedResultsHolder results, Path filepath) {
         String filenameRoot = filenameRoot(filepath.toFile().getName());
         if (filenameRoot == null || filenameRoot.isEmpty()) {
             err.println(String.format("Skipping file for which we could not determine base filename: %s", filepath.toString()));
@@ -185,11 +196,11 @@ public class MediaFilename {
         }
         MediaProcessor.Result resultMatchingRoot = results.getResultMatchingRoot(filepath);
         if (resultMatchingRoot != null) {
-            log.info("Found result matching [{}] to [{}]", filenameRoot, resultMatchingRoot.getNewFilename());
+            log.debug("Found result matching [{}] to [{}]", filenameRoot, resultMatchingRoot.getNewFilename());
             return resultMatchingRoot;
         }
         else {
-            log.info("No result found matching [{}] for [{}]", filenameRoot, filepath.toString());
+            log.debug("No result found matching [{}] for [{}]", filenameRoot, filepath.toString());
             return null;
         }
     }
@@ -214,7 +225,7 @@ public class MediaFilename {
         return "Time zone can be any of: " + Offset.dumpOffsetCodes() + "\n";
     }
 
-    private static void writeResult(Path commandFile, List<MediaProcessor.Result> allResults, OutputAppender out) throws IOException {
+    private void writeResult(Path commandFile, List<MediaProcessor.Result> allResults, OutputAppender out) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(commandFile, StandardOpenOption.CREATE_NEW)) {
             for (MediaProcessor.Result result : allResults) {
                 String command = String.format("mv \'%s\' \'%s\'", workingDirectory.relativize(result.getOriginalPath()), result.getNewFilename());
@@ -253,6 +264,10 @@ public class MediaFilename {
      */
     public interface OutputAppender {
         void println(String line);
+        /**
+         * Flush if applicable
+         */
+        void flush();
     }
 
     static class PrintStreamAppender implements OutputAppender {
@@ -263,9 +278,45 @@ public class MediaFilename {
             Objects.requireNonNull(ps, "PrintStream required!");
             this.ps = ps;
         }
+
         @Override
         public void println(String line) {
             ps.println(line);
+        }
+
+        @Override
+        public void flush() {
+            ps.flush();
+        }
+    }
+
+    static class LoggingOutputAppender implements OutputAppender {
+
+        private Logger log = LoggerFactory.getLogger(LoggingOutputAppender.class);
+        OutputAppender oa;
+        boolean debug;
+
+        public LoggingOutputAppender(OutputAppender oa, boolean debug) {
+            this.oa = oa;
+            this.debug = debug;
+        }
+        @Override
+        public void println(String line) {
+            logLine(line);
+            oa.println(line);
+        }
+
+        private void logLine(String line) {
+            if (debug) {
+                log.debug(line);
+            } else {
+                log.info(line);
+            }
+        }
+
+        @Override
+        public void flush() {
+            oa.flush();
         }
     }
 }

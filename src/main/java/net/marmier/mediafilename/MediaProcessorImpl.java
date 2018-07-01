@@ -30,9 +30,9 @@ public class MediaProcessorImpl implements MediaProcessor {
 
     private final Path workingDirectory;
 
-    public MediaProcessorImpl(Offset code, String workingDirectory) {
+    public MediaProcessorImpl(Offset code, Path workingDirectory) {
         sigGen = new FilenameGenerator(code);
-        this.workingDirectory = new File(workingDirectory).toPath();
+        this.workingDirectory = workingDirectory;
     }
 
     /**
@@ -63,7 +63,7 @@ public class MediaProcessorImpl implements MediaProcessor {
             throw new MediaProcessorException(String.format("Expecting file path to be absolute: %s", file.toString()));
         }
 
-        log.info("Processing {}", file.getFileName());
+        log.debug("Processing {}", file.getFileName());
 
         String newName = generateFilename(file.toFile());
         if (newName != null) {
@@ -123,7 +123,7 @@ public class MediaProcessorImpl implements MediaProcessor {
             return null;
         }
         String sig = sigGen.createUtcTimeZoneFilename(meta);
-        log.info("Capture datetime: {}. Result: {}.", meta.getCaptureDateTime(), sig);
+        log.debug("Capture datetime: {}. Result: {}.", meta.getCaptureDateTime(), sig);
         return sig;
     }
 }

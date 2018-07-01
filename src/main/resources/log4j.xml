@@ -9,8 +9,8 @@
     </layout>
   </appender>
 
-  <appender name="default.file" class="org.apache.log4j.FileAppender">
-    <param name="file" value="${logfilename}.log" />
+  <appender name="trace.file" class="org.apache.log4j.FileAppender">
+    <param name="file" value="${filenamebase}.log" />
     <param name="append" value="false" />
     <param name="threshold" value="debug" />
     <layout class="org.apache.log4j.PatternLayout">
@@ -19,22 +19,21 @@
   </appender>
 
   <appender name="error.file" class="org.apache.log4j.FileAppender">
-    <param name="file" value="${errorsfilename}.log" />
+    <param name="file" value="${filenamebase}_errors.log" />
     <param name="append" value="false" />
-    <param name="threshold" value="error" />
+    <param name="threshold" value="info" />
     <layout class="org.apache.log4j.PatternLayout">
       <param name="ConversionPattern" value="%d{ISO8601} %-5p [%c{1}] - %m%n" />
     </layout>
   </appender>
 
   <logger name="*">
-    <level value="DEBUG"/>
+    <level value="debug"/>
   </logger>
 
   <root>
-    <priority value ="info" />
     <appender-ref ref="console" />
-    <appender-ref ref="default.file" />
+    <appender-ref ref="trace.file" />
     <appender-ref ref="error.file" />
   </root>
 </log4j:configuration>

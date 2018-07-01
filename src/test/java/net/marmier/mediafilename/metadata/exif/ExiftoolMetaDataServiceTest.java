@@ -44,7 +44,7 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationNEF() {
         String expected = "2015-10-27_120816utc_tz+0100_DSC_5303.NEF";
 
-        MediaProcessorImpl mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+1"), "src/test/resources/nikon");
+        MediaProcessorImpl mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+1"), new File("src/test/resources/nikon").toPath());
         String filename = mediaProcessor.generateFilename(new File("src/test/resources/nikon/DSC_5303.NEF"));
 
         Assert.assertEquals(expected, filename);
@@ -54,7 +54,7 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationJPG() {
         String expected = "2015-10-18_145029utc_tz+0200_DSC_4180.JPG";
 
-        MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), "src/test/resources/nikon");
+        MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), new File("src/test/resources/nikon").toPath());
         String filename = mediaProcessor.generateFilename(new File("src/test/resources/nikon/DSC_4180.JPG"));
 
         Assert.assertEquals(expected, filename);
@@ -64,7 +64,7 @@ public class ExiftoolMetaDataServiceTest {
     public void testFilenameGenerationAppleiPhoneMov() {
         String expected = "2016-05-03_181526utc_tz+0200_iphone6_ios84.MOV";
 
-        MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), "src/test/resources/apple");
+        MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), new File("src/test/resources/apple").toPath());
         String filename = mediaProcessor.generateFilename(new File("src/test/resources/apple/iphone6_ios84.MOV"));
 
         Assert.assertEquals(expected, filename);
@@ -77,7 +77,7 @@ public class ExiftoolMetaDataServiceTest {
             // Nikon E5200 movie
             String expected = "2016-07-07_192055utc_tz+0200_DSCN7778.MOV";
 
-            MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), "src/test/resources/nikon");
+            MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+2"), new File("src/test/resources/nikon").toPath());
             String filename = mediaProcessor.generateFilename(new File("src/test/resources/nikon/DSCN7778.MOV"));
 
             Assert.assertEquals(expected, filename);
@@ -86,7 +86,7 @@ public class ExiftoolMetaDataServiceTest {
             // Sample Quicktime movie
             String expected = "2005-10-17_215434utc_tz+0100_sample_iTunes.mov";
 
-            MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+1"), "src/test/resources/apple/qt_samples");
+            MediaProcessor mediaProcessor = new MediaProcessorImpl(Offset.forCode("UTC+1"), new File("src/test/resources/apple/qt_samples").toPath());
             String filename = mediaProcessor.generateFilename(new File("src/test/resources/apple/qt_samples/sample_iTunes.mov"));
 
             Assert.assertEquals(expected, filename);
